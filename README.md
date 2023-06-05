@@ -96,7 +96,7 @@ to adapt it.
 
 In ConTeXt I know it's possible, because I used this workaround in a project of mine:
 
-```context
+```tex
 \defineregister[myIndex][deeptextcommand=\IdToTerm]
 
 \starttext
