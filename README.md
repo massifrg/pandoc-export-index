@@ -84,9 +84,9 @@ my tests that did not work.
 
 ## How indices are modelled in different formats
 
-AFAIK from the indexing point of view, we can divide formats into two families:
+AFAIK we can divide formats into two families from the indexing point of view:
 
-- ICML, docx, odt: there's a database of terms and references in the text to them
+- ICML, docx, odt: there's a database of terms and references to them in the text
 
 - ConTeXt, LaTeX: the database is built incrementally from macro calls like `\index{term}`,
                   `\index{head+sub}` (ConTeXt), `\index{head!sub}` (LaTeX)
@@ -107,9 +107,80 @@ In ConTeXt I know it's possible, because I used this workaround in a project of 
 ```
 
 where `\IdToTerm` is a macro that gets an id as input and places the TeX tokens of the
-corresponding term.
+corresponding term, while `\myIndex` must be followed by two parameters: the sorting key
+in brackets and the term id in braces.
 
-## Index in ICML
+## Writers
+
+### Extracting indices as JSON objects: `indices2json.lua`
+
+`indices2json.lua` is a [custom writer](https://pandoc.org/custom-writers.html) to extract
+indices and terms [defined in a document](#defining-indices) as JSON objects, that you may
+then use to build an external database.
+
+Example: enter the `src` directory and type
+
+```sh
+pandoc -f markdown -t indices2json.lua ../test/test.md
+```
+
+and you'll get something like this:
+
+```json
+{
+  "indices": [
+    {
+      "name": "subjects",
+      "prefix": "subjects",
+      "refClass": "index-ref",
+      "refWhere": "after"
+    }
+  ],
+  "terms": {
+    "subjects": [
+      {
+        "blocks": [
+          {
+            "c": [
+              {
+                "c": "Consequo",
+                "t": "Str"
+              }
+            ],
+            "t": "Para"
+          }
+        ],
+        "id": "consequo",
+        "sortKey": "consequo",
+        "text": "Consequo\n"
+      },
+      {
+        "blocks": [
+          {
+            "c": [
+              {
+                "c": [
+                  {
+                    "c": "Labor",
+                    "t": "Str"
+                  }
+                ],
+                "t": "Emph"
+              }
+            ],
+            "t": "Para"
+          }
+        ],
+        "id": "labor",
+        "sortKey": "labor",
+        "text": "Labor\n"
+      }
+    ]
+  }
+}
+```
+
+### Index in ICML: `icml_with_index.lua`
 
 InDesign has only one index, so you can't define more indices inside a document
 (actually there's a workaround, using the first level of the index to discriminate

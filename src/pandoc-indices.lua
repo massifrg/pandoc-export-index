@@ -15,12 +15,8 @@ local INDEX_SORT_KEY_ATTR = "sort-key"
 ---@diagnostic disable-next-line: undefined-global
 local PANDOC_STATE = PANDOC_STATE
 ---@diagnostic disable-next-line: undefined-global
-local FORMAT = FORMAT
----@diagnostic disable-next-line: undefined-global
 local pandoc = pandoc
 local table_insert = table.insert
-local table_concat = table.concat
-local string_gsub = string.gsub
 local pandoc_Pandoc = pandoc.Pandoc
 local pandoc_write = pandoc.write
 
@@ -144,7 +140,7 @@ local function addIndexTerm(index_name, id, sort_key, content)
     id = id,
     sortKey = sort_key,
     text = pandoc_write(content_as_doc, "plain"),
-    html = pandoc_write(content_as_doc, "html")
+    blocks = content_as_doc.blocks
   })
 end
 
