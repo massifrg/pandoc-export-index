@@ -1,9 +1,12 @@
---- A Pandoc custom writer to export an index in ICML.
+---A Pandoc custom writer to export an index in ICML.
+---@module 'pandoc-indices'
+local pandocIndices = require('./pandoc-indices')
 
-local INDEX_REF_BEFORE = "before"
-local INDEX_TERM_CLASS = "index-term"
--- a string used in ICML index topics
+---A string used in ICML index topics.
 local ICML_TOPICN = "Topicn"
+---The max length of the `Name` attribute in an index `Topic` in ICML.
+---When it's `nil`, it means "no max length"
+local MAX_ICML_TERM_TEXT_LENGTH = nil
 
 ---@diagnostic disable-next-line: undefined-global
 local pandoc = pandoc
@@ -12,13 +15,20 @@ local string_gsub = string.gsub
 local string_sub = string.sub
 local table_insert = table.insert
 local table_concat = table.concat
+local utf8sub = pandoc.text.sub
 
-local function logging_info(w)
-  io.stderr:write('(I) icml_with_index: ' .. w .. '\n')
+-- beginning of functions for logging
+---@module 'logging'
+
+---Write a warning message to the standard error.
+local function logging_info(i)
+  io.stderr:write('(I) icml_with_index: ' .. i .. '\n')
 end
+---Write an informative message to the standard error.
 local function logging_warning(w)
   io.stderr:write('(W) icml_with_index: ' .. w .. '\n')
 end
+---Write an error message to the standard error.
 local function logging_error(e)
   io.stderr:write('(W) icml_with_index: ' .. e .. '\n')
 end
@@ -31,25 +41,39 @@ if logging then
   logging_warning = logging.warning
   logging_error = logging.error
 end
+-- end of functions for logging
 
+-- Adding a field to the IndexTerm class for ICML
+---@class IndexTerm A term inside an Index.
+---@field icml string  Like the text field, but normalized for ICML.
+
+---@type Index[]
 local indices = {}
+---The content of the index in ICML to be passed in `WriterOptions.variables`
+---to [pandoc.write](https://pandoc.org/lua-filters.html#pandoc.write).
+---@type string
 local index_var = ""
+---@type table<IndexName,IndexTerm[]>
 local terms = {}
 
-local indicesFun = require('./pandoc-indices')
+local _isIndexRef = pandocIndices.isIndexRef
+local hasClass = pandocIndices.hasClass
+local INDEX_NAME_DEFAULT = pandocIndices.INDEX_NAME_DEFAULT
+local INDEX_REF_BEFORE = pandocIndices.INDEX_REF_BEFORE
+local INDEX_TERM_CLASS = pandocIndices.INDEX_TERM_CLASS
 
-local _isIndexRef = indicesFun.isIndexRef
-local hasClass = indicesFun.hasClass
-local INDEX_NAME_DEFAULT = indicesFun.INDEX_NAME_DEFAULT
-
+---Verify if a Span is an index reference.
+---If it's an index reference returns true and the Index.
+---@param span    Span  A Pandoc Span.
+---@return boolean
+---@return Index|nil
 local function isIndexRef(span)
   return _isIndexRef(indices, span)
 end
 
--- term_id_to_array_index has a table for every index
--- that associates the id of an index term
+---A table that associates the id of an index term
 -- to the array index (offset) in terms[index_name]
----@type table<string, table<string,integer>>
+---@type table<IndexName, table<string,integer>>
 local term_id_to_array_index = {}
 ---Retrieves an index term that has an id.
 ---@param index_name IndexName The name of the index.
@@ -73,6 +97,25 @@ local function getIndexTermById(index_name, id)
   end
 end
 
+---Normalize the text that goes into an ICML Index.
+---@param text string The text to normalize for ICML.
+---@return string
+local function normalizeIcmlText(text)
+  -- remove newlines at the end
+  local normalized = string_gsub(text, "[\r\n ]+$", "")
+  -- replace ampersands
+  normalized = string_gsub(normalized, '&', "&amp;")
+  -- replace quotes
+  normalized = string_gsub(normalized, '"', "&quot;")
+  -- replace soft hyphens
+  normalized = string_gsub(normalized, '\xC2\xAD', "")
+  -- trim the text
+  if MAX_ICML_TERM_TEXT_LENGTH then
+    normalized = utf8sub(normalized, 1, MAX_ICML_TERM_TEXT_LENGTH)
+  end
+  return normalized
+end
+
 ---Produce a reference to an index to be put in an ICML document.
 ---@param idref        string The identifier of the index term.
 ---@param index_name   string The name of the index the term belongs to.
@@ -86,8 +129,11 @@ local function getIcmlReference(idref, index_name, index_prefix)
   if term then
     local self_attr = '' -- ' Self="u301"'
     -- local ref_topic_attr = ' ReferencedTopic="' .. index_prefix .. idref .. '"' -- ' ReferencedTopic="u115Topicnesempio"'
+    if not term.icml then
+      term.icml = normalizeIcmlText(term.text)
+    end
     local ref_topic_attr = ' ReferencedTopic="' ..
-        index_prefix .. ICML_TOPICN .. term.text ..
+        index_prefix .. ICML_TOPICN .. term.icml ..
         '"'            -- ' ReferencedTopic="u115Topicnesempio"'
     local id_attr = '' -- ' Id="1"'
     local text = '<CharacterStyleRange AppliedCharacterStyle="CharacterStyle/$ID/[No character style]">\n'
@@ -103,23 +149,22 @@ local function getIcmlReference(idref, index_name, index_prefix)
   return pandoc.List({})
 end
 
+---Create an index topic for ICML.
+---@param  prefix string    A prefix for the topic identifier.
+---@param  term   IndexTerm A term of the index.
+---@return string
 local function getIcmlTopic(prefix, term)
-  local text = (term.text or term.id or "") .. ""
-  -- text = string_gsub(text, "[\r\n ]+$", "")
-  -- text = string_gsub(text, '"', "&quot;")
-  -- logging_info('topic "' .. term.id .. '": ' .. text)
-  return '<Topic Self="'
-      .. prefix .. ICML_TOPICN .. term.sortKey
-      .. '" SortOrder="' .. (term.sortKey or '')
-      .. '" Name="' .. term.text
-      .. '" />'
+  if not term.icml then
+    term.icml = normalizeIcmlText(term.text)
+  end
+  return '<Topic'
+      .. ' Self="' .. prefix .. ICML_TOPICN .. term.icml .. '"'
+      .. ' SortOrder="' .. (term.sortKey or '') .. '"'
+      .. ' Name="' .. term.icml .. '"'
+      .. ' />'
 end
 
-local get_reference_for_format = {
-  icml = getIcmlReference,
-}
-
--- This filter inserts the index references in the text.
+---A Pandoc filter that inserts the index references in the ICML text.
 local insert_index_references = {
   Span = function(span)
     local is_index_ref, index = isIndexRef(span)
@@ -128,22 +173,19 @@ local insert_index_references = {
       if idref then
         ---@diagnostic disable-next-line: need-check-nil
         logging_info('Found reference for index "' .. index.name .. '", term with idref=' .. idref)
-        local get_reference = get_reference_for_format.icml
-        if get_reference then
-          local inlines = pandoc.List({})
+        local inlines = pandoc.List({})
+        ---@diagnostic disable-next-line: need-check-nil
+        local ref = getIcmlReference(idref, index.name, index.prefix)
+        if ref then
           ---@diagnostic disable-next-line: need-check-nil
-          local ref = get_reference(idref, index.name, index.prefix)
-          if ref then
-            ---@diagnostic disable-next-line: need-check-nil
-            if index.refWhere == INDEX_REF_BEFORE then
-              inlines:extend(ref)
-              inlines:extend(span.content)
-            else
-              inlines:extend(span.content)
-              inlines:extend(ref)
-            end
-            return inlines
+          if index.refWhere == INDEX_REF_BEFORE then
+            inlines:extend(ref)
+            inlines:extend(span.content)
+          else
+            inlines:extend(span.content)
+            inlines:extend(ref)
           end
+          return inlines
         end
       else
         ---@diagnostic disable-next-line: need-check-nil
@@ -153,15 +195,10 @@ local insert_index_references = {
   end
 }
 
-local place_indices = {
+---A Pandoc filter that sets the `index` variable to be used in `WriterOptions.variables`.
+---It does not change the document.
+local set_index_variable = {
   Pandoc = function(doc)
-    -- local indices_blocks = pandoc.List({})
-    -- if FORMAT == 'icml' then
-    --   indices_blocks:insert(pandoc.RawBlock('icml',
-    --     '<Index Self="u115">\n</Index>'
-    --   ))
-    -- end
-    -- doc.blocks:extend(indices_blocks)
     local index_lines = {}
     for i = 1, #indices do
       local index = indices[i]
@@ -169,7 +206,6 @@ local place_indices = {
       local index_terms = terms[index.name]
       for t = 1, #index_terms do
         local term = index_terms[t]
-        -- logging_info(term)
         table_insert(index_lines, getIcmlTopic(index.prefix, term))
       end
       table_insert(index_lines, '</Index>')
@@ -179,6 +215,7 @@ local place_indices = {
   end
 }
 
+---A Pandoc filter to remove all the `Div`s that represent terms of indices.
 local expunge_index_terms = {
   Div = function(div)
     if hasClass(div, INDEX_TERM_CLASS) then
@@ -187,10 +224,12 @@ local expunge_index_terms = {
   end
 }
 
-local indices_filters = { insert_index_references, place_indices, expunge_index_terms }
+---Pandoc filters to be applied to the document, to produce an ICML with an index.
+local indices_filters = { insert_index_references, set_index_variable, expunge_index_terms }
 
+---Pandoc writer to produce an ICML document with an index.
 function Writer(doc, opts)
-  local collected = indicesFun.collectIndices(doc)
+  local collected = pandocIndices.collectIndices(doc)
   indices = collected.indices
   terms = collected.terms
   local filtered = doc
@@ -205,11 +244,11 @@ function Writer(doc, opts)
   return pandoc.write(filtered, 'icml', options)
 end
 
+---Template that inserts the `<Index>` element just before the main `<Story>` in ICML.
 function Template()
   local t = pandoc.template.default 'icml'
   local story_start = string_find(t, '  <Story Self="pandoc_story"')
   if story_start then
-    -- logging_info('STORY_START=' .. story_start)
     t = string_sub(t, 1, story_start - 1) .. '$index$\n  ' .. string_sub(t, story_start)
   end
   return t

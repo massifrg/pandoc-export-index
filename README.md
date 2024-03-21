@@ -13,37 +13,38 @@ to export a document with indices in these formats:
 
 - ~~odt~~
 
-Currently there's only an initial support for the index in ICML.
+Currently there's only a [Writer](https://pandoc.org/custom-writers.html)
+to export an index (one level only) to an ICML standalone document (`-s` option in Pandoc).
 
 ## What is needed to specify indices
 
 For indices, you need:
 
-- the names of the indices (many formats support only one index)
+- the names of the indices (many formats support only one index);
 
-- the terms (topics) for every index
+- the terms (topics) for every index;
  
-- the references to those terms in the text
+- the references to those terms in the text.
 
-### Defining indices
+### Defining indices for Pandoc
 
 This software considers an __index definition__ a `Div` block with
 
 - an `index` class
 
-- an `index-name` _(optional: its value is `index` if not specified)_;
+- an `index-name` _(optional: its value is "index" if not specified)_;
   __please do use simple names without numbers or symbols for indices' names__,
-  like _index_, _names_, _topics_, _biblio_, _subjects_, etc.
+  like "index", "names", "topics", "biblio", "subjects", etc.
 
 - a `ref-class` attribute that specifies the class that `Span` inlines must have
   to be considered references to this index
-  _(optional: its value is `index-ref` if not specified)_
+  _(optional: its value is "index-ref" if not specified)_
 
-- a `put-index-ref` attribute that can be `before` or `after`, see below
-  _(optional: its value is `after` if not specified)_
+- a `put-index-ref` attribute that can be "before" or "after", see below
+  _(optional: its value is "after" if not specified)_
 
-Why a `Div`? Because it's a _block_ that carries arbitrary data with the `Attr` structure.
-and it's a container of _blocks_.
+Why a `Div`? Because it's a `Block` that carries arbitrary data within the `Attr` structure.
+and it's a container of `Block`s.
 
 #### References
 
@@ -53,7 +54,8 @@ __Index references__ are `Span` inlines with
 
 - an `idref` attribute that matches the `id` attribute of a term of that index
 
-Why a `Span`? Because it lives among inlines and carries arbitrary data with the `Attr` structure.
+Why a `Span`? Because it's among inlines and carries arbitrary data
+within the `Attr` structure.
 
 #### Terms (topics)
 
@@ -75,7 +77,7 @@ Currently there's __no support for sub-topics__, but it's planned.
 
 ## Caveats
 
-Writers and filters in this collections need to load a base module, `pandoc-indices.lua`;
+Writers and filters in this collection need to load a base module, `pandoc-indices.lua`;
 to avoid errors, copy it to the directory you are running pandoc or run pandoc from
 the `src` directory of this package.
 
@@ -204,6 +206,9 @@ Here's the custom writer's main function:
 
 ```lua
 function Writer(doc, opts)
+ local collected = pandocIndices.collectIndices(doc)
+  indices = collected.indices
+  terms = collected.terms
   local filtered = doc
   for i = 1, #indices_filters do
     logging_info("applying filter #" .. i)
@@ -217,13 +222,14 @@ function Writer(doc, opts)
 end
 ```
 
-Some filters are applied to collect index data and fill the `index_var` variable, whose value is put
-into `options.variables.index` before calling `pandoc.write(filtered, 'icml', options)`.
+Some filters are applied to collect index data and fill the `index_var` variable,
+whose value is put into `options.variables.index` before calling 
+`pandoc.write(filtered, 'icml', options)`.
 The writer then replaces `$index$` in the template with the value of `options.variables.index`.
 
 ## Version
 
-The current version is 0.1 (2023, June 5).
+The current version is 0.2.0 (2024, March 21).
 
 ## Aknowledgements
 

@@ -1,12 +1,26 @@
---- A Pandoc custom writer to export an index in ICML.
+---Functions to export indices with Pandoc.
+
+-- Classes and attributes of a Pandoc Div representing an index.
+-- The class that discriminates between a normal Div and an index.
 local INDEX_CLASS = "index"
+---The attribute specifying the index name (it's "index" when it's absent).
 local INDEX_NAME_ATTR = "index-name"
+---The default value for the attribute "index-name".
 local INDEX_NAME_DEFAULT = "index"
+---The attribute specifying the class of Span elements representing a reference to a term of an index.
 local INDEX_REF_CLASS_ATTR = "ref-class"
+---The default value of the class that discriminates between a normal Span and an index reference.
 local INDEX_REF_CLASS_DEFAULT = "index-ref"
+---The attribute specifying where the reference is put respect to the indexed words (before or after)
+---e.g. in LaTeX: "term\index{term}" or "\index{term}term"
 local INDEX_REF_WHERE_ATTR = "put-index-ref"
+---The value of INDEX_REF_WHERE_ATTR when the references are put before the word to be indexed.
 local INDEX_REF_BEFORE = "before"
+---The value of INDEX_REF_WHERE_ATTR when the references are put after the word to be indexed.
 local INDEX_REF_AFTER = "after"
+---@alias IndexRefWhere "before"|"after"
+---The default value of INDEX_REF_WHERE_ATTR.
+---@type IndexRefWhere
 local INDEX_REF_WHERE_DEFAULT = INDEX_REF_AFTER
 local INDEX_TERM_CLASS = "index-term"
 local INDEX_SORT_KEY_ATTR = "sort-key"
@@ -17,23 +31,28 @@ local string_len = string.len
 local string_sub = string.sub
 local table_concat = table.concat
 local table_insert = table.insert
+local pandoc = pandoc
+local pandoc_Pandoc = pandoc.Pandoc
+local pandoc_write = pandoc.write
 local utf8len = pandoc.text.len
 local utf8lower = pandoc.text.lower
 local utf8sub = pandoc.text.sub
 
 ---@diagnostic disable-next-line: undefined-global
 local PANDOC_STATE = PANDOC_STATE
----@diagnostic disable-next-line: undefined-global
-local pandoc = pandoc
-local pandoc_Pandoc = pandoc.Pandoc
-local pandoc_write = pandoc.write
 
-local function logging_info(w)
-  io.stderr:write('(I) pandoc-indices: ' .. w .. '\n')
+-- beginning of functions for logging
+---@module 'logging'
+
+---Write a warning message to the standard error.
+local function logging_info(i)
+  io.stderr:write('(I) pandoc-indices: ' .. i .. '\n')
 end
+---Write an informative message to the standard error.
 local function logging_warning(w)
   io.stderr:write('(W) pandoc-indices: ' .. w .. '\n')
 end
+---Write an error message to the standard error.
 local function logging_error(e)
   io.stderr:write('(W) pandoc-indices: ' .. e .. '\n')
 end
@@ -46,22 +65,30 @@ if logging then
   logging_warning = logging.warning
   logging_error = logging.error
 end
+-- end of functions for logging
 
----@class List A Pandoc List.
+---@class List A Pandoc `List`.
 
----@class Block A Pandoc Block.
+---@class Attr A Pandoc `Attr` data structure.
+---@field identifier string
+---@field classes    string[]
+---@field attributes table<string,string>
+
+---@class Block A Pandoc `Block`.
 ---@field content List The content of the Block.
+---@field attr    Attr|nil
 
----@class Inline A Pandoc Inline.
+---@class Inline A Pandoc `Inline`.
 ---@field content List The content of the Inline.
+---@field attr    Attr|nil
 
----@class Div: Block A Pandoc Div.
+---@class Div: Block A Pandoc `Div`.
 ---@field identifier string
 ---@field classes string[]
 ---@field attributes {[string]: string}
 ---@field content Block[]
 
----@class Span: Inline A Pandoc Span.
+---@class Span: Inline A Pandoc `Span`.
 ---@field identifier string
 ---@field classes string[]
 ---@field attributes {[string]: string}
@@ -72,7 +99,7 @@ end
 ---@class Index    An index in a document.
 ---@field name     string The name of the index, e.g. "index", "names", etc.
 ---@field refClass string The .
----@field refWhere INDEX_REF_BEFORE|INDEX_REF_AFTER Where the reference is put.
+---@field refWhere IndexRefWhere Where the reference is put.
 ---@field prefix   string A prefix of the index.
 
 ---@class IndexTerm A term inside an Index.
@@ -80,6 +107,10 @@ end
 ---@field sortKey string  The key to sort the term with.
 ---@field text    string  The content of the term as a string without styles.
 ---@field blocks  Block[] The content of the term as Pandoc Blocks.
+
+---@class DocumentIndices
+---@field indices Index[]
+---@field terms   table<IndexName,IndexTerm[]>
 
 ---@type Index[] An array of indices defined in a document.
 local indices = {}
@@ -162,6 +193,7 @@ local function indexFromDiv(div, log)
     end
     local attrs = div.attributes
     local name = attrs[INDEX_NAME_ATTR] or INDEX_NAME_DEFAULT
+    ---@type "after"|"before"
     local refWhere = attrs[INDEX_REF_WHERE_ATTR] or INDEX_REF_WHERE_DEFAULT
     local refClass = attrs[INDEX_REF_CLASS_ATTR] or INDEX_REF_CLASS_DEFAULT
     local prefix = name
@@ -199,7 +231,7 @@ local function indexTermFromDiv(div)
   end
 end
 
--- CODE TO COMPUTE SORT KEYS
+--- BEGINNING OF CODE TO COMPUTE SORT KEYS
 local MIN_SORT_KEY_LENGTH = 10 -- min length of a computed sort key
 local MAX_SORT_KEY_LENGTH = 40 -- max length of a computed sort key
 local NON_LETTER_CHAR = "_"    -- all non letter chars are converted to this one
@@ -243,7 +275,10 @@ local ACCENTED_TRANSLATION = {
   { to = "ss", oneof = "ß" },
 }
 
+---@type table<string,string>
 local UTF8_TO_UNACCENTED = nil -- a table for accented => not accented translation
+
+---Computes the values of `UTF8_TO_UNACCENTED` from the descriptions in `ACCENTED_TRANSLATION`
 local function computeUtf8ToUnaccented()
   UTF8_TO_UNACCENTED = {}
   for i = 1, #ACCENTED_TRANSLATION do
@@ -257,7 +292,10 @@ local function computeUtf8ToUnaccented()
   end
 end
 
--- lowercase a UTF8 string and remove accents
+---Lowercase a UTF8 string and replace most common latin accented characters
+---with the corresponding unaccented ASCII char.
+---@param text string A UTF8 text.
+---@return string
 local function lowerAndRemoveAccents(text)
   if not UTF8_TO_UNACCENTED then
     computeUtf8ToUnaccented()
@@ -282,10 +320,12 @@ local function lowerAndRemoveAccents(text)
   return table_concat(unaccented)
 end
 
--- computes a sort key from a UTF8 text
--- the sort key will contain only unaccented latin letters, numbers and NON_LETTER_CHAR chars;
--- NON_LETTER_CHAR can't be at the beginning or at the end of the sort key
--- there can't be no consecutive NON_LETTER_CHARs
+---Computes a sort key from a UTF8 text.
+---The sort key will contain only unaccented latin letters, numbers and NON_LETTER_CHAR chars;
+---NON_LETTER_CHAR can't be at the beginning or at the end of the sort key;
+---there can't be no consecutive NON_LETTER_CHARs.
+---@param text string A UTF8 text.
+---@return string
 local function computeSortKey(text)
   local index = string_find(text, "%(")
   if not index or index > MAX_SORT_KEY_LENGTH then
@@ -313,6 +353,11 @@ local function computeSortKey(text)
   return sort_key
 end
 
+---Add an IndexTerm to the table of the terms of an index.
+---@param index_name string      The index name.
+---@param id         string      The term identifier.
+---@param sort_key   string|nil  The string to use to sort terms.
+---@param content    Block[]|nil The content of the term.
 local function addIndexTerm(index_name, id, sort_key, content)
   local index_terms = terms[index_name]
   if not index_terms then
@@ -326,26 +371,27 @@ local function addIndexTerm(index_name, id, sort_key, content)
     -- logging_info('Text for sort key: "' .. sortKey .. '"')
   end
   local text = pandoc_write(content_as_doc, "plain", { wrap_text = "preserve" })
-  text = string_gsub(text, "[\r\n ]+$", "")
-  text = string_gsub(text, '"', "&quot;")
   table_insert(index_terms, {
     id = id,
     sortKey = sortKey,
-    text = utf8sub(text, 1, 40), -- TODO: the text must be trimmed only in ICML, not here
+    text = text,
     blocks = content_as_doc.blocks
   })
 end
 
+---A Pandoc filter that collects all the index terms
+---from the `Div`s that have the `INDEX_TERM_CLASS`.
 local collect_index_terms = {
   Div = function(div)
     local index_name, id, sort_key, content = indexTermFromDiv(div)
-    if index_name then
+    if index_name and id then
       addIndexTerm(index_name, id, sort_key, content)
     end
   end
 }
 
---- This filter collects all the `Div` blocks that define an index.
+---A Pandoc filter that collects all the `Div` blocks that define an index
+---(i.e. that have the `INDEX_CLASS` class).
 local collect_indices = {
   traverse = 'topdown',
   Div = function(div)
@@ -373,6 +419,9 @@ local collect_indices = {
   end
 }
 
+---Collect all the indices from a Pandoc document.
+---@param doc table A Pandoc document.
+---@return DocumentIndices
 local function collectIndices(doc)
   indices = {}
   terms = {}
@@ -389,5 +438,15 @@ return {
   isIndexRef = isIndexRef,
   findIndexWith = findIndexWith,
   hasClass = hasClass,
+  INDEX_CLASS = INDEX_CLASS,
+  INDEX_NAME_ATTR = INDEX_NAME_ATTR,
   INDEX_NAME_DEFAULT = INDEX_NAME_DEFAULT,
+  INDEX_REF_CLASS_ATTR = INDEX_REF_CLASS_ATTR,
+  INDEX_REF_CLASS_DEFAULT = INDEX_REF_CLASS_DEFAULT,
+  INDEX_REF_WHERE_ATTR = INDEX_REF_WHERE_ATTR,
+  INDEX_REF_BEFORE = INDEX_REF_BEFORE,
+  INDEX_REF_AFTER = INDEX_REF_AFTER,
+  INDEX_REF_WHERE_DEFAULT = INDEX_REF_WHERE_DEFAULT,
+  INDEX_TERM_CLASS = INDEX_TERM_CLASS,
+  INDEX_SORT_KEY_ATTR = INDEX_SORT_KEY_ATTR,
 }
