@@ -1,0 +1,869 @@
+[ Header
+    1
+    ( "an-example-to-show-a-way-of-making-indices-with-pandoc"
+    , []
+    , []
+    )
+    [ Str "An"
+    , Space
+    , Str "example"
+    , Space
+    , Str "to"
+    , Space
+    , Str "show"
+    , Space
+    , Str "a"
+    , Space
+    , Str "way"
+    , Space
+    , Str "of"
+    , Space
+    , Str "making"
+    , Space
+    , Str "indices"
+    , Space
+    , Str "with"
+    , Space
+    , Str "Pandoc"
+    ]
+, Para
+    [ Span
+        ( "" , [ "xn" ] , [ ( "idref" , "n0005" ) ] ) [ Str "Max" ]
+    , Space
+    , Str "thought"
+    , Space
+    , Str "that"
+    , Space
+    , Str "it"
+    , Space
+    , Str "would"
+    , Space
+    , Str "have"
+    , Space
+    , Str "been"
+    , Space
+    , Str "hard"
+    , Space
+    , Str "to"
+    , Space
+    , Str "convince"
+    , SoftBreak
+    , Span
+        ( "" , [ "xn" ] , [ ( "idref" , "n0001" ) ] ) [ Str "John" ]
+    , Space
+    , Str "to"
+    , Space
+    , Str "introduce"
+    , Space
+    , Str "elements"
+    , Space
+    , Str "for"
+    , Space
+    , Str "indices"
+    , Space
+    , Str "in"
+    , Space
+    , Str "Pandoc."
+    ]
+, Para
+    [ Str "Fortunately,"
+    , Space
+    , Span
+        ( "" , [ "xs" ] , [ ( "idref" , "s0001" ) ] )
+        [ Str "Pandoc" ]
+    , Space
+    , Str "has"
+    , Space
+    , Str "enough"
+    , Space
+    , Str "flexibility"
+    , SoftBreak
+    , Str "to"
+    , Space
+    , Str "encode"
+    , Space
+    , Str "extra"
+    , Space
+    , Str "text"
+    , Space
+    , Str "structures,"
+    , Space
+    , Str "just"
+    , Space
+    , Str "customizing"
+    , Space
+    , Str "the"
+    , Space
+    , Str "current"
+    , SoftBreak
+    , Span
+        ( "" , [ "xs" ] , [ ( "idref" , "s0002" ) ] )
+        [ Str "blocks" ]
+    , Space
+    , Str "and"
+    , Space
+    , Span
+        ( "" , [ "xs" ] , [ ( "idref" , "s0003" ) ] )
+        [ Str "inlines" ]
+    , Str "."
+    , SoftBreak
+    , Str "A"
+    , Space
+    , Str "little"
+    , Space
+    , Str "more"
+    , Space
+    , Str "difficult"
+    , Space
+    , Str "is"
+    , Space
+    , Str "making"
+    , Space
+    , Str "them"
+    , Space
+    , Str "transparent"
+    , Space
+    , Str "to"
+    , Space
+    , Str "current"
+    , Space
+    , Str "workflows,"
+    , SoftBreak
+    , Str "so"
+    , Space
+    , Str "that"
+    , Space
+    , Str "they"
+    , Space
+    , Str "continue"
+    , Space
+    , Str "to"
+    , Space
+    , Str "work"
+    , Space
+    , Str "as"
+    , Space
+    , Str "before."
+    ]
+, Para
+    [ Str "So"
+    , Space
+    , Span
+        ( "" , [ "xn" ] , [ ( "idref" , "n0005" ) ] ) [ Str "Max" ]
+    , Space
+    , Str "decided"
+    , Space
+    , Str "to"
+    , Space
+    , Str "use"
+    , Space
+    , Code ( "" , [] , [] ) "Div"
+    , Span ( "" , [ "xs" ] , [ ( "idref" , "s0005" ) ] ) []
+    , SoftBreak
+    , Str "and"
+    , Space
+    , Code ( "" , [] , [] ) "Span"
+    , Span ( "" , [ "xs" ] , [ ( "idref" , "s0005" ) ] ) []
+    , Space
+    , Str "elements"
+    , Space
+    , Str "to"
+    , Space
+    , Str "encode"
+    , Space
+    , Str "indices"
+    , SoftBreak
+    , Str "in"
+    , Space
+    , Span
+        ( "" , [ "xs" ] , [ ( "idref" , "s0001" ) ] )
+        [ Str "Pandoc" ]
+    , Str ":"
+    , Space
+    , Str "no"
+    , Space
+    , Str "need"
+    , Space
+    , Str "for"
+    , Space
+    , Emph [ Str "ad" , Space , Str "hoc" ]
+    , Space
+    , Str "elements."
+    , SoftBreak
+    , Str "The"
+    , Space
+    , Str "elements"
+    , Space
+    , Str "would"
+    , Space
+    , Str "have"
+    , Space
+    , Str "been"
+    , Space
+    , Str "transparent"
+    , Space
+    , Str "to"
+    , Space
+    , Str "filters"
+    , Space
+    , Str "and"
+    , Space
+    , Str "writers"
+    , Space
+    , Str "unaware"
+    , SoftBreak
+    , Str "of"
+    , Space
+    , Str "them."
+    ]
+, Para
+    [ Str "Index"
+    , Space
+    , Str "references"
+    , Space
+    , Str "are"
+    , Space
+    , Str "just"
+    , Space
+    , Span
+        ( "" , [ "xs" ] , [ ( "idref" , "s0005" ) ] )
+        [ Code ( "" , [] , [] ) "Span" ]
+    , Space
+    , Str "inlines"
+    , Space
+    , Str "that"
+    , Space
+    , Str "don\8217t"
+    , Space
+    , Str "change"
+    , Space
+    , Str "the"
+    , Space
+    , Str "text,"
+    , SoftBreak
+    , Str "while"
+    , Space
+    , Str "index"
+    , Space
+    , Str "terms"
+    , Space
+    , Str "are"
+    , Space
+    , Code ( "" , [] , [] ) "Div"
+    , Span ( "" , [ "xs" ] , [ ( "idref" , "s0004" ) ] ) []
+    , Space
+    , Str "blocks"
+    , Space
+    , Str "\8211"
+    , Space
+    , Str "with"
+    , Space
+    , Str "a"
+    , Space
+    , Code ( "" , [] , [] ) "index-term"
+    , Space
+    , Str "class"
+    , Space
+    , Str "\8211"
+    , SoftBreak
+    , Str "all"
+    , Space
+    , Str "enclosed"
+    , Space
+    , Str "in"
+    , Space
+    , Str "a"
+    , Space
+    , Code ( "" , [] , [] ) "Div"
+    , Span ( "" , [ "xs" ] , [ ( "idref" , "s0004" ) ] ) []
+    , Space
+    , Str "block"
+    , Space
+    , Str "that"
+    , Space
+    , Str "represents"
+    , Space
+    , Str "the"
+    , Space
+    , Str "index"
+    , Space
+    , Str "by"
+    , Space
+    , Str "having"
+    , SoftBreak
+    , Str "an"
+    , Space
+    , Code ( "" , [] , [] ) "index"
+    , Space
+    , Str "class."
+    ]
+, Para
+    [ Str "Index"
+    , Space
+    , Str "terms"
+    , Space
+    , Str "must"
+    , Space
+    , Str "have"
+    , Space
+    , Str "a"
+    , Space
+    , Str "unique"
+    , Space
+    , Code ( "" , [] , [] ) "id"
+    , Str ","
+    , Space
+    , Str "so"
+    , Space
+    , Str "that"
+    , Space
+    , Str "references"
+    , Space
+    , Str "can"
+    , Space
+    , Str "refer"
+    , SoftBreak
+    , Str "to"
+    , Space
+    , Str "them"
+    , Space
+    , Str "with"
+    , Space
+    , Str "their"
+    , Space
+    , Code ( "" , [] , [] ) "idref"
+    , Space
+    , Str "attribute."
+    ]
+, Para
+    [ Str "What"
+    , Space
+    , Str "happens"
+    , Space
+    , Str "when"
+    , Space
+    , Str "you"
+    , Space
+    , Str "transform"
+    , Space
+    , Str "a"
+    , Space
+    , Str "document"
+    , Space
+    , Str "containing"
+    , Space
+    , Str "and"
+    , Space
+    , Str "index?"
+    ]
+, Para
+    [ Str "Unless"
+    , Space
+    , Str "you"
+    , Space
+    , Str "use"
+    , Space
+    , Str "Pandoc"
+    , Space
+    , Str "filters"
+    , Space
+    , Str "or"
+    , Space
+    , Str "writers"
+    , Space
+    , Str "that"
+    , Space
+    , Str "are"
+    , Space
+    , Str "aware"
+    , Space
+    , Str "of"
+    , Space
+    , Str "the"
+    , Space
+    , Str "indices,"
+    , SoftBreak
+    , Str "references"
+    , Space
+    , Str "just"
+    , Space
+    , Str "disappear"
+    , Space
+    , Str "because"
+    , Space
+    , Str "they"
+    , Space
+    , Str "are"
+    , Space
+    , Str "transparent"
+    , Space
+    , Code ( "" , [] , [] ) "Span"
+    , Space
+    , Str "inlines,"
+    , SoftBreak
+    , Str "while"
+    , Space
+    , Code ( "" , [] , [] ) "Div"
+    , Span ( "" , [ "xs" ] , [ ( "idref" , "s0004" ) ] ) []
+    , Space
+    , Str "blocks"
+    , Space
+    , Str "of"
+    , Space
+    , Str "indices"
+    , Space
+    , Str "look"
+    , Space
+    , Str "like"
+    , Space
+    , Str "glossaries"
+    , Space
+    , Str "of"
+    , Space
+    , Str "terms."
+    ]
+, Para
+    [ Str "Writing"
+    , Space
+    , Str "a"
+    , Space
+    , Str "filter"
+    , Space
+    , Str "that"
+    , Space
+    , Str "expunges"
+    , Space
+    , Str "those"
+    , Space
+    , Code ( "" , [] , [] ) "Div"
+    , Span ( "" , [ "xs" ] , [ ( "idref" , "s0004" ) ] ) []
+    , Space
+    , Str "blocks"
+    , SoftBreak
+    , Str "is"
+    , Space
+    , Str "not"
+    , Space
+    , Str "difficult,"
+    , Space
+    , Str "but"
+    , Space
+    , Span
+        ( "" , [ "xn" ] , [ ( "idref" , "n0005" ) ] ) [ Str "Max" ]
+    , Space
+    , Str "thinks"
+    , Space
+    , Str "you"
+    , Space
+    , Str "should"
+    , Space
+    , Str "place"
+    , SoftBreak
+    , Str "them"
+    , Space
+    , Str "in"
+    , Space
+    , Str "the"
+    , Space
+    , Str "exact"
+    , Space
+    , Str "place"
+    , Space
+    , Str "you"
+    , Space
+    , Str "want"
+    , Space
+    , Str "an"
+    , Space
+    , Str "index"
+    , Space
+    , Str "to"
+    , Space
+    , Str "appear"
+    , Space
+    , Str "in"
+    , Space
+    , Str "the"
+    , Space
+    , Str "output"
+    , Space
+    , Str "document."
+    , SoftBreak
+    , Str "That"
+    , Space
+    , Str "way,"
+    , Space
+    , Str "a"
+    , Space
+    , Str "filter"
+    , Space
+    , Str "or"
+    , Space
+    , Str "writer"
+    , Space
+    , Str "can"
+    , Space
+    , Str "replace"
+    , Space
+    , Str "the"
+    , Space
+    , Str "index"
+    , Space
+    , Str "with"
+    , Space
+    , Str "the"
+    , Space
+    , Str "command"
+    , SoftBreak
+    , Str "that"
+    , Space
+    , Str "typesets"
+    , Space
+    , Str "it"
+    , Space
+    , Str "(in"
+    , Space
+    , Str "ConTeXt,"
+    , Space
+    , Str "it"
+    , Space
+    , Str "would"
+    , Space
+    , Str "place"
+    , Space
+    , Str "the"
+    , Space
+    , Code ( "" , [] , [] ) "\\placeindex"
+    , Space
+    , Str "or"
+    , SoftBreak
+    , Code ( "" , [] , [] ) "\\placeregister"
+    , Space
+    , Str "macro"
+    , Space
+    , Str "there)."
+    ]
+, Para
+    [ Span
+        ( "" , [ "xn" ] , [ ( "idref" , "n0005" ) ] ) [ Str "Max" ]
+    , Space
+    , Str "asked"
+    , Space
+    , Span
+        ( "" , [ "xn" ] , [ ( "idref" , "n0013" ) ] )
+        [ Str "Alice" ]
+    , SoftBreak
+    , Str "and"
+    , Space
+    , Span
+        ( "" , [ "xn" ] , [ ( "idref" , "n0024" ) ] ) [ Str "Bob" ]
+    , Space
+    , Str "their"
+    , Space
+    , Str "opinion"
+    , Space
+    , Str "on"
+    , Space
+    , Str "this"
+    , Space
+    , Str "subject,"
+    , SoftBreak
+    , Str "but"
+    , Space
+    , Str "they"
+    , Space
+    , Str "don\8217t"
+    , Space
+    , Str "know"
+    , Space
+    , Str "he"
+    , Space
+    , Str "did"
+    , Space
+    , Str "it"
+    , Space
+    , Str "just"
+    , Space
+    , Str "to"
+    , Space
+    , Str "have"
+    , Space
+    , Str "them"
+    , Space
+    , Str "in"
+    , Space
+    , Str "the"
+    , Space
+    , Str "index"
+    , Space
+    , Str "of"
+    , Space
+    , Str "names"
+    , SoftBreak
+    , Str "in"
+    , Space
+    , Str "an"
+    , Space
+    , Str "example"
+    , Space
+    , Str "document"
+    , Space
+    , Str "on"
+    , Space
+    , Str "indices."
+    ]
+, Header
+    2
+    ( "index-of-names" , [] , [] )
+    [ Str "Index" , Space , Str "of" , Space , Str "names" ]
+, Div
+    ( ""
+    , [ "index" ]
+    , [ ( "index-name" , "names" ) , ( "ref-class" , "xn" ) ]
+    )
+    [ Div
+        ( "n0013"
+        , [ "index-term" ]
+        , [ ( "sort-key" , "alice" ) ]
+        )
+        [ Para
+            [ Str "Alice,"
+            , Space
+            , Str "an"
+            , Space
+            , Str "imaginary"
+            , Space
+            , Str "person"
+            , Space
+            , Str "Max"
+            , Space
+            , Str "asked"
+            , Space
+            , Str "her"
+            , Space
+            , Str "opinion"
+            , Space
+            , Str "about"
+            , Space
+            , Str "indices"
+            , Space
+            , Str "in"
+            , Space
+            , Str "Pandoc."
+            ]
+        ]
+    , Div
+        ( "n0024" , [ "index-term" ] , [ ( "sort-key" , "bob" ) ] )
+        [ Para
+            [ Str "Bob,"
+            , Space
+            , Str "an"
+            , Space
+            , Str "imaginary"
+            , Space
+            , Str "person"
+            , Space
+            , Str "Max"
+            , Space
+            , Str "asked"
+            , Space
+            , Str "his"
+            , Space
+            , Str "opinion"
+            , Space
+            , Str "about"
+            , Space
+            , Str "indices"
+            , Space
+            , Str "in"
+            , Space
+            , Str "Pandoc."
+            ]
+        ]
+    , Div
+        ( "n0005" , [ "index-term" ] , [ ( "sort-key" , "max" ) ] )
+        [ Para
+            [ Str "Max,"
+            , Space
+            , Str "a"
+            , Space
+            , Str "guy"
+            , Space
+            , Str "who"
+            , Space
+            , Str "presumptuously"
+            , Space
+            , Str "thinks"
+            , Space
+            , Str "to"
+            , Space
+            , Str "have"
+            , Space
+            , Str "smart"
+            , Space
+            , Str "ideas"
+            , Space
+            , Str "about"
+            , Space
+            , Str "indices"
+            , Space
+            , Str "in"
+            , Space
+            , Str "Pandoc."
+            ]
+        ]
+    , Div
+        ( "n0002" , [ "index-term" ] , [ ( "sort-key" , "john" ) ] )
+        [ Para
+            [ Str "John,"
+            , Space
+            , Str "pandoc"
+            , Space
+            , Str "master."
+            ]
+        ]
+    ]
+, Header
+    2
+    ( "subjects-index" , [] , [] )
+    [ Str "Subjects" , Space , Str "index" ]
+, Div
+    ( ""
+    , [ "index" ]
+    , [ ( "index-name" , "subjects" ) , ( "ref-class" , "xs" ) ]
+    )
+    [ Div
+        ( "s0001"
+        , [ "index-term" ]
+        , [ ( "sort-key" , "pandoc" ) ]
+        )
+        [ Para
+            [ Str "Pandoc,"
+            , Space
+            , Str "a"
+            , Space
+            , Str "tool"
+            , Space
+            , Str "to"
+            , Space
+            , Str "convert"
+            , Space
+            , Str "text"
+            , Space
+            , Str "documents"
+            , Space
+            , Str "in"
+            , Space
+            , Str "various"
+            , Space
+            , Str "formats."
+            ]
+        ]
+    , Div
+        ( "s0002"
+        , [ "index-term" ]
+        , [ ( "sort-key" , "blocks" ) ]
+        )
+        [ Para
+            [ Str "Blocks,"
+            , Space
+            , Str "text"
+            , Space
+            , Str "structures"
+            , Space
+            , Str "in"
+            , Space
+            , Str "Pandoc"
+            , Space
+            , Str "AST"
+            , Space
+            , Str "that"
+            , Space
+            , Str "are"
+            , Space
+            , Str "rendered"
+            , Space
+            , Str "in"
+            , Space
+            , Str "vertical"
+            , Space
+            , Str "order."
+            ]
+        ]
+    , Div
+        ( "s0003"
+        , [ "index-term" ]
+        , [ ( "sort-key" , "inlines" ) ]
+        )
+        [ Para
+            [ Str "Inlines,"
+            , Space
+            , Str "text"
+            , Space
+            , Str "structures"
+            , Space
+            , Str "in"
+            , Space
+            , Str "Pandoc"
+            , Space
+            , Str "AST"
+            , Space
+            , Str "that"
+            , Space
+            , Str "are"
+            , Space
+            , Str "rendered"
+            , Space
+            , Str "in"
+            , Space
+            , Str "the"
+            , Space
+            , Str "lines"
+            , Space
+            , Str "of"
+            , Space
+            , Str "paragraphs."
+            ]
+        ]
+    , Div
+        ( "s0004" , [ "index-term" ] , [ ( "sort-key" , "div" ) ] )
+        [ Para
+            [ Str "Div,"
+            , Space
+            , Str "the"
+            , Space
+            , Str "most"
+            , Space
+            , Str "generic"
+            , Space
+            , Str "Block"
+            , Space
+            , Str "of"
+            , Space
+            , Str "Pandoc"
+            , Space
+            , Str "AST."
+            ]
+        ]
+    , Div
+        ( "s0005" , [ "index-term" ] , [ ( "sort-key" , "span" ) ] )
+        [ Para
+            [ Str "Span,"
+            , Space
+            , Str "the"
+            , Space
+            , Str "most"
+            , Space
+            , Str "generic"
+            , Space
+            , Str "Inline"
+            , Space
+            , Str "of"
+            , Space
+            , Str "Pandoc"
+            , Space
+            , Str "AST."
+            ]
+        ]
+    ]
+]

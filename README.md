@@ -26,6 +26,10 @@ For indices, you need:
  
 - the references to those terms in the text.
 
+### An example document
+
+In the `doc` directory there's an `indices-example.md` document.
+
 ### Defining indices for Pandoc
 
 This software considers an __index definition__ a `Div` block with

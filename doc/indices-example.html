@@ -1,0 +1,83 @@
+<h1 id="an-example-to-show-a-way-of-making-indices-with-pandoc">An
+example to show a way of making indices with Pandoc</h1>
+<p><span class="xn" data-idref="n0005">Max</span> thought that it would
+have been hard to convince <span class="xn"
+data-idref="n0001">John</span> to introduce elements for indices in
+Pandoc.</p>
+<p>Fortunately, <span class="xs" data-idref="s0001">Pandoc</span> has
+enough flexibility to encode extra text structures, just customizing the
+current <span class="xs" data-idref="s0002">blocks</span> and <span
+class="xs" data-idref="s0003">inlines</span>. A little more difficult is
+making them transparent to current workflows, so that they continue to
+work as before.</p>
+<p>So <span class="xn" data-idref="n0005">Max</span> decided to use
+<code>Div</code><span class="xs" data-idref="s0005"></span> and
+<code>Span</code><span class="xs" data-idref="s0005"></span> elements to
+encode indices in <span class="xs" data-idref="s0001">Pandoc</span>: no
+need for <em>ad hoc</em> elements. The elements would have been
+transparent to filters and writers unaware of them.</p>
+<p>Index references are just <span class="xs"
+data-idref="s0005"><code>Span</code></span> inlines that don’t change
+the text, while index terms are <code>Div</code><span class="xs"
+data-idref="s0004"></span> blocks – with a <code>index-term</code> class
+– all enclosed in a <code>Div</code><span class="xs"
+data-idref="s0004"></span> block that represents the index by having an
+<code>index</code> class.</p>
+<p>Index terms must have a unique <code>id</code>, so that references
+can refer to them with their <code>idref</code> attribute.</p>
+<p>What happens when you transform a document containing and index?</p>
+<p>Unless you use Pandoc filters or writers that are aware of the
+indices, references just disappear because they are transparent
+<code>Span</code> inlines, while <code>Div</code><span class="xs"
+data-idref="s0004"></span> blocks of indices look like glossaries of
+terms.</p>
+<p>Writing a filter that expunges those <code>Div</code><span class="xs"
+data-idref="s0004"></span> blocks is not difficult, but <span class="xn"
+data-idref="n0005">Max</span> thinks you should place them in the exact
+place you want an index to appear in the output document. That way, a
+filter or writer can replace the index with the command that typesets it
+(in ConTeXt, it would place the <code>\placeindex</code> or
+<code>\placeregister</code> macro there).</p>
+<p><span class="xn" data-idref="n0005">Max</span> asked <span class="xn"
+data-idref="n0013">Alice</span> and <span class="xn"
+data-idref="n0024">Bob</span> their opinion on this subject, but they
+don’t know he did it just to have them in the index of names in an
+example document on indices.</p>
+<h2 id="index-of-names">Index of names</h2>
+<div class="index" data-index-name="names" data-ref-class="xn">
+<div id="n0013" class="index-term" data-sort-key="alice">
+<p>Alice, an imaginary person Max asked her opinion about indices in
+Pandoc.</p>
+</div>
+<div id="n0024" class="index-term" data-sort-key="bob">
+<p>Bob, an imaginary person Max asked his opinion about indices in
+Pandoc.</p>
+</div>
+<div id="n0005" class="index-term" data-sort-key="max">
+<p>Max, a guy who presumptuously thinks to have smart ideas about
+indices in Pandoc.</p>
+</div>
+<div id="n0002" class="index-term" data-sort-key="john">
+<p>John, pandoc master.</p>
+</div>
+</div>
+<h2 id="subjects-index">Subjects index</h2>
+<div class="index" data-index-name="subjects" data-ref-class="xs">
+<div id="s0001" class="index-term" data-sort-key="pandoc">
+<p>Pandoc, a tool to convert text documents in various formats.</p>
+</div>
+<div id="s0002" class="index-term" data-sort-key="blocks">
+<p>Blocks, text structures in Pandoc AST that are rendered in vertical
+order.</p>
+</div>
+<div id="s0003" class="index-term" data-sort-key="inlines">
+<p>Inlines, text structures in Pandoc AST that are rendered in the lines
+of paragraphs.</p>
+</div>
+<div id="s0004" class="index-term" data-sort-key="div">
+<p>Div, the most generic Block of Pandoc AST.</p>
+</div>
+<div id="s0005" class="index-term" data-sort-key="span">
+<p>Span, the most generic Inline of Pandoc AST.</p>
+</div>
+</div>
