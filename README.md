@@ -34,43 +34,58 @@ In the `doc` directory there's an `indices-example.md` document.
 
 This software considers an __index definition__ a `Div` block with
 
-- an `index` class
+- an `index` class;
+  this is __mandatory__, because makes the `Div` an index database;
 
-- an `index-name` _(optional: its value is "index" if not specified)_;
-  __please do use simple names without numbers or symbols for indices' names__,
+- an `index-name`;
+  this is  __optional__; if not set, its value is considered to be "index";
+  please __do use simple names__ without numbers or symbols for indices' names,
   like "index", "names", "topics", "biblio", "subjects", etc.
 
 - a `ref-class` attribute that specifies the class that `Span` inlines must have
-  to be considered references to this index
-  _(optional: its value is "index-ref" if not specified)_
+  to be considered references to this index;
+  this is __optional__; if not set, its value is considered to be "index-ref";
 
-- a `put-index-ref` attribute that can be "before" or "after", see below
-  _(optional: its value is "after" if not specified)_
+- a `put-index-ref` attribute that can be "before" or "after", see below;
+  this is __optional__; if not set, its value is considered to be "after".
 
-Why a `Div`? Because it's a `Block` that carries arbitrary data within the `Attr` structure.
+Why a `Div`? Because it's a `Block` that carries arbitrary data within the `Attr` structure;
 and it's a container of `Block`s.
 
 #### References
 
-__Index references__ are `Span` inlines with
+__Index references__ are `Span` inlines with:
 
-- a class that matches the `ref-class` of an index defined somewhere in the document
+- a class that matches the `ref-class` of an index defined somewhere in the document;
+  this is __mandatory__, since it's what makes this `Span` an index reference;
 
-- an `idref` attribute that matches the `id` attribute of a term of that index
+- an `idref` attribute that matches the `id` attribute of a term of that index;
+  this is __optional__, but if not set, you won't get this occurrence in the index;
+
+- an __optional__ `indexed-text` attribute with the text it refers to;
+  this is useful when you use _empty_ references (an empty `Span` just put at the left
+  or at the right of the text it refers to)
 
 Why a `Span`? Because it's among inlines and carries arbitrary data
 within the `Attr` structure.
 
 #### Terms (topics)
 
-__Index terms__ are `Div` blocks with
+__Index terms__ are `Div` blocks with:
 
-- an `index-term` class
+- an `index-term` class;
+  this is __mandatory__, because it's what makes this `Div` an index term,
+  instead of a generic `Div`;
 
-- an `id`
+- an `id`;
+  this is __mandatory__ too, otherwise you can't reference this term in the text;
 
-- an `index-name` attribute whose value matches the one of an index
-  _(it's optional if it's inside a `Div` that defines an index)_
+- an `index-name` attribute whose value matches the one of an index;
+  this is __optional__, especially when the term `Div` is inside an index `Div`;
+
+- an __optional__ `sort-key` attribute, specifying a simple text according to which
+  the term must be sorted;
+  generally the filters and writers of this repository don't do sorting.
 
 Why a `Div`? A `Para` or a `Plain` are enough in many cases, but they have no data attached
 (no `Attr`). An index topic could also be quite long and multi-paragraph (i.e. think of
@@ -79,23 +94,15 @@ where a topic is discussed).
 
 Currently there's __no support for sub-topics__, but it's planned.
 
-## Caveats
-
-Writers and filters in this collection need to load a base module, `pandoc-indices.lua`;
-to avoid errors, copy it to the directory you are running pandoc or run pandoc from
-the `src` directory of this package.
-
-The `--data-dir` option of Pandoc should make that file visible to pandoc, but in
-my tests that did not work.
-
 ## How indices are modelled in different formats
 
 AFAIK we can divide formats into two families from the indexing point of view:
 
-- ICML, docx, odt: there's a database of terms and references to them in the text
+- ICML, docx, odt: there's a database of terms and references to them in the text;
+                   rendering indices in HTML and epub could follow this model too;
 
 - ConTeXt, LaTeX: the database is built incrementally from macro calls like `\index{term}`,
-                  `\index{head+sub}` (ConTeXt), `\index{head!sub}` (LaTeX)
+                  `\index{head+sub}` (ConTeXt), `\index{head!sub}` (LaTeX).
 
 This package follows the first model, so writers for ConTeXt and LaTeX should do some work
 to adapt it.
