@@ -1,6 +1,26 @@
----A Pandoc custom writer to export an index in ICML.
+---A [Pandoc writer](https://pandoc.org/custom-writers.html)
+---to export the index of a document in ICML.
 ---@module 'pandoc-indices'
-local pandocIndices = require('./pandoc-indices')
+
+---Add paths to search for Lua code to be loaded with `require`.
+---See [here](https://github.com/jgm/pandoc/discussions/9598).
+---@param paths string[]
+local function addPathsToLuaPath(paths)
+  local luapaths = {}
+  local path
+  for i = 1, #paths do
+    path = paths[i]
+    if path and type(path) == "string" then
+      table.insert(luapaths, path .. "/?.lua")
+      table.insert(luapaths, path .. "/?/init.lua")
+    end
+  end
+  package.path = package.path .. ";" .. table.concat(luapaths, ";")
+end
+
+---@diagnostic disable-next-line: undefined-global
+addPathsToLuaPath({ pandoc.path.directory(PANDOC_SCRIPT_FILE) })
+local pandocIndices = require('pandoc-indices')
 
 ---A string used in ICML index topics.
 local ICML_TOPICN = "Topicn"
