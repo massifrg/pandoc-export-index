@@ -100,7 +100,7 @@ local term_id_to_array_index = {}
 ---@param id         string    The index term identifier.
 ---@return IndexTerm|nil
 local function getIndexTermById(index_name, id)
-  local index_terms = terms[index_name]
+  local index_terms = terms[index_name] or {}
   if not term_id_to_array_index[index_name] then
     local id_to_array_index = {}
     for t = 1, #index_terms do
@@ -223,7 +223,7 @@ local set_index_variable = {
     for i = 1, #indices do
       local index = indices[i]
       table_insert(index_lines, '<Index Self="' .. index.prefix .. '">')
-      local index_terms = terms[index.name]
+      local index_terms = terms[index.name] or {}
       for t = 1, #index_terms do
         local term = index_terms[t]
         table_insert(index_lines, getIcmlTopic(index.prefix, term))
