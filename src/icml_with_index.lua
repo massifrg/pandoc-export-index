@@ -76,6 +76,7 @@ local terms = {}
 
 local _isIndexRef = pandocIndices.isIndexRef
 local hasClass = pandocIndices.hasClass
+local textForXml = pandocIndices.textForXml
 local INDEX_NAME_DEFAULT = pandocIndices.INDEX_NAME_DEFAULT
 local INDEX_REF_BEFORE = pandocIndices.INDEX_REF_BEFORE
 local INDEX_TERM_CLASS = pandocIndices.INDEX_TERM_CLASS
@@ -119,19 +120,11 @@ end
 ---@param text string The text to normalize for ICML.
 ---@return string
 local function normalizeIcmlText(text)
-  -- remove newlines at the end
-  local normalized = string_gsub(text, "[\r\n ]+$", "")
-  -- replace ampersands
-  normalized = string_gsub(normalized, '&', "&amp;")
-  -- replace quotes
-  normalized = string_gsub(normalized, '"', "&quot;")
-  -- replace soft hyphens
-  normalized = string_gsub(normalized, '\xC2\xAD', "")
-  -- trim the text
-  if MAX_ICML_TERM_TEXT_LENGTH then
-    normalized = utf8sub(normalized, 1, MAX_ICML_TERM_TEXT_LENGTH)
-  end
-  return normalized
+  return textForXml(text, {
+    removeSoftHyphens = true,
+    removeNewlines = true,
+    maxLength = MAX_ICML_TERM_TEXT_LENGTH
+  })
 end
 
 ---Produce a reference to an index to be put in an ICML document.
@@ -235,18 +228,8 @@ local set_index_variable = {
   end
 }
 
----A Pandoc filter to remove all the `Div`s that represent terms of indices.
----@type Filter
-local expunge_index_terms = {
-  Div = function(div)
-    if hasClass(div, INDEX_TERM_CLASS) then
-      return pandoc.List({})
-    end
-  end
-}
-
 ---Pandoc filters to be applied to the document, to produce an ICML with an index.
-local indices_filters = { insert_index_references, set_index_variable, expunge_index_terms }
+local indices_filters = { insert_index_references, set_index_variable, pandocIndices.expungeIndexTerms }
 
 ---Pandoc writer to produce an ICML document with an index.
 function Writer(doc, opts)

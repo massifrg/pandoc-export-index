@@ -32,7 +32,9 @@ local string_sub = string.sub
 local table_concat = table.concat
 local table_insert = table.insert
 local pandoc = pandoc
+local pandoc_List = pandoc.List
 local pandoc_Pandoc = pandoc.Pandoc
+local pandoc_RawInline = pandoc.RawInline
 local pandoc_write = pandoc.write
 local utf8len = pandoc.text.len
 local utf8lower = pandoc.text.lower
@@ -353,6 +355,64 @@ local function addIndexTerm(index_name, id, sort_key, content)
   })
 end
 
+---Find an `IndexTerm` with an `id`
+---@param docIndices DocumentIndices The indices of a document.
+---@param id string The identifier of the `IndexTerm`.
+---@param indexName? string The index name; if not given, it searches in every index.
+---@return nil|IndexTerm
+local function findIndexTerm(docIndices, id, indexName)
+  local index_names = {} ---@type string[]
+  if indexName then
+    table_insert(index_names, indexName)
+  else
+    for i = 0, #docIndices.indices do
+      table_insert(index_names, docIndices.indices[i].name)
+    end
+  end
+  local index_terms
+  for i = 0, #index_names do
+    index_terms = docIndices.terms[index_names[i]]
+    if index_terms then
+      for j = 1, #index_terms do
+        local term = index_terms[j]
+        if term.id == id then
+          return term
+        end
+      end
+    end
+  end
+end
+
+---@class TextForXmlOptions
+---@field maxLength? integer Truncate the text to this length when it exceeds it.
+---@field removeNewlines? boolean Remove newlines.
+---@field removeSoftHyphens boolean Remove soft hyphen chars.
+
+---Transform the text to go into XML.
+---@param text string The text to transform.
+---@param options TextForXmlOptions Options for the transformation into XML.
+---@return string
+local function textForXml(text, options)
+  -- remove newlines at the end
+  local forxml = text
+  if options.removeNewlines then
+    forxml = string_gsub(forxml, "[\r\n ]+$", "")
+  end
+  -- replace ampersands
+  forxml = string_gsub(forxml, '&', "&amp;")
+  -- replace quotes
+  forxml = string_gsub(forxml, '"', "&quot;")
+  -- replace soft hyphens
+  if options.removeSoftHyphens then
+    forxml = string_gsub(forxml, '\xC2\xAD', "")
+  end
+  -- trim the text
+  if options.maxLength then
+    forxml = utf8sub(forxml, 1, options.maxLength)
+  end
+  return forxml
+end
+
 ---A Pandoc filter that collects all the index terms
 ---from the `Div`s that have the `INDEX_TERM_CLASS`.
 local collect_index_terms = {
@@ -406,12 +466,28 @@ local function collectIndices(doc)
   }
 end
 
+---A filter to remove all the `Div`s that represent terms of indices.
+---@type Filter
+local expungeIndexTerms = {
+  Div = function(div)
+    if hasClass(div, INDEX_TERM_CLASS) then
+      return pandoc.List({})
+    end
+  end
+}
+
 return {
   collectIndices = collectIndices,
+  expungeIndexTerms = expungeIndexTerms,
+  findIndexWith = findIndexWith,
+  findIndexTerm = findIndexTerm,
+  hasClass = hasClass,
   isIndexDiv = isIndexDiv,
   isIndexRef = isIndexRef,
-  findIndexWith = findIndexWith,
-  hasClass = hasClass,
+  textForXml = textForXml,
+  logging_error = logging_error,
+  logging_warning = logging_warning,
+  logging_info = logging_info,
   INDEX_CLASS = INDEX_CLASS,
   INDEX_NAME_ATTR = INDEX_NAME_ATTR,
   INDEX_NAME_DEFAULT = INDEX_NAME_DEFAULT,

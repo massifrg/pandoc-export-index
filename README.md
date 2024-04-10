@@ -7,11 +7,13 @@ to export a document with indices in these formats:
 
 - InDesign ICML
 
+- docx
+
+- odt
+
 - ~~ConTeXt~~
 
-- ~~docx~~
-
-- ~~odt~~
+- ~~LaTeX~~
 
 Currently there's only a [Writer](https://pandoc.org/custom-writers.html)
 to export an index (one level only) to an ICML standalone document (`-s` option in Pandoc).
@@ -123,9 +125,7 @@ where `\IdToTerm` is a macro that gets an id as input and places the TeX tokens 
 corresponding term, while `\myIndex` must be followed by two parameters: the sorting key
 in brackets and the term id in braces.
 
-## Writers
-
-### Extracting indices as JSON objects: `indices2json.lua`
+## Extracting indices as JSON objects: the `indices2json.lua` Writer
 
 `indices2json.lua` is a [custom writer](https://pandoc.org/custom-writers.html) to extract
 indices and terms [defined in a document](#defining-indices) as JSON objects, that you may
@@ -193,7 +193,7 @@ and you'll get something like this:
 }
 ```
 
-### Index in ICML: `icml_with_index.lua`
+## Exporting an index to ICML: the `icml_with_index.lua` Writer
 
 InDesign has only one index, so you can't define more indices inside a document
 (actually there's a workaround, using the first level of the index to discriminate
@@ -237,6 +237,38 @@ Some filters are applied to collect index data and fill the `index_var` variable
 whose value is put into `options.variables.index` before calling 
 `pandoc.write(filtered, 'icml', options)`.
 The writer then replaces `$index$` in the template with the value of `options.variables.index`.
+
+## Exporting indices to DOCX: the `docx_index.lua` filter
+
+`docx_index.lua` is a filter that injects references to index terms in the text.
+
+Here's an example:
+
+```
+pandoc -f markdown -t docx -o doc-with-index.docx -L docx_index.lua doc.md
+```
+
+When you open the resulting DOCX file, you won't see an index.
+You must create it explicitly (e.g. __References -> Insert index__)
+with your word processing app (e.g. Word).
+
+## Exporting indices to DOCX: the `odt_index.lua` filter
+
+`odt_index.lua` is a filter that injects references to index terms in the text.
+
+Here's an example:
+
+```
+pandoc -f markdown -t odt -o doc-with-index.odt -L odt_index.lua doc.md
+```
+
+When you open the resulting ODT file, you won't see an index.
+You must create it explicitly with your word processing app.
+In LibreOffice, you can click on
+__Insert - Table of Contents and Index - Table of Contents, Index or Bibliography__.
+
+Though LibreOffice supports many indices, for now the only one that is created is
+the alphabetical index.
 
 ## Version
 
