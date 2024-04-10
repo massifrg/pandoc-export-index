@@ -38,9 +38,6 @@ local utf8len = pandoc.text.len
 local utf8lower = pandoc.text.lower
 local utf8sub = pandoc.text.sub
 
----@diagnostic disable-next-line: undefined-global
-local PANDOC_STATE = PANDOC_STATE
-
 -- beginning of functions for logging
 ---@module 'logging'
 
@@ -67,33 +64,6 @@ if logging then
 end
 -- end of functions for logging
 
----@class List A Pandoc `List`.
-
----@class Attr A Pandoc `Attr` data structure.
----@field identifier string
----@field classes    string[]
----@field attributes table<string,string>
-
----@class Block A Pandoc `Block`.
----@field content List The content of the Block.
----@field attr    Attr|nil
-
----@class Inline A Pandoc `Inline`.
----@field content List The content of the Inline.
----@field attr    Attr|nil
-
----@class Div: Block A Pandoc `Div`.
----@field identifier string
----@field classes string[]
----@field attributes {[string]: string}
----@field content Block[]
-
----@class Span: Inline A Pandoc `Span`.
----@field identifier string
----@field classes string[]
----@field attributes {[string]: string}
----@field content Inline[]
-
 ---@alias IndexName string The name of an index.
 
 ---@class Index    An index in a document.
@@ -108,6 +78,10 @@ end
 ---@field text    string  The content of the term as a string without styles.
 ---@field blocks  Block[] The content of the term as Pandoc Blocks.
 
+---@class IndexRef A reference to an `IndexTerm` in the text.
+---@field indexName string The name of the index.
+---@field idref     string The id of the corresponding `IndexTerm`.
+
 ---@class DocumentIndices
 ---@field indices Index[]
 ---@field terms   table<IndexName,IndexTerm[]>
@@ -120,7 +94,7 @@ local current_index_name
 local terms = {}
 
 ---Check whether a Pandoc item with an Attr has a class.
----@param elem Block|Inline The Block or Inline with an Attr.
+---@param elem WithAttr The Block or Inline with an Attr.
 ---@param class string      The class to look for among the ones in Attr's classes.
 ---@return boolean
 local function hasClass(elem, class)
@@ -412,7 +386,7 @@ local collect_indices = {
       current_index_name = prev_index_name
     else
       local index_name, id, sort_key = indexTermFromDiv(div)
-      if index_name then
+      if index_name and id then
         addIndexTerm(index_name, id, sort_key, div.content)
       end
     end

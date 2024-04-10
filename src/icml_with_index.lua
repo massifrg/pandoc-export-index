@@ -18,7 +18,6 @@ local function addPathsToLuaPath(paths)
   package.path = package.path .. ";" .. table.concat(luapaths, ";")
 end
 
----@diagnostic disable-next-line: undefined-global
 addPathsToLuaPath({ pandoc.path.directory(PANDOC_SCRIPT_FILE) })
 local pandocIndices = require('pandoc-indices')
 
@@ -28,7 +27,6 @@ local ICML_TOPICN = "Topicn"
 ---When it's `nil`, it means "no max length"
 local MAX_ICML_TERM_TEXT_LENGTH = nil
 
----@diagnostic disable-next-line: undefined-global
 local pandoc = pandoc
 local string_find = string.find
 local string_gsub = string.gsub
@@ -185,6 +183,7 @@ local function getIcmlTopic(prefix, term)
 end
 
 ---A Pandoc filter that inserts the index references in the ICML text.
+---@type Filter
 local insert_index_references = {
   Span = function(span)
     local is_index_ref, index = isIndexRef(span)
@@ -217,6 +216,7 @@ local insert_index_references = {
 
 ---A Pandoc filter that sets the `index` variable to be used in `WriterOptions.variables`.
 ---It does not change the document.
+---@type Filter
 local set_index_variable = {
   Pandoc = function(doc)
     local index_lines = {}
@@ -236,6 +236,7 @@ local set_index_variable = {
 }
 
 ---A Pandoc filter to remove all the `Div`s that represent terms of indices.
+---@type Filter
 local expunge_index_terms = {
   Div = function(div)
     if hasClass(div, INDEX_TERM_CLASS) then
