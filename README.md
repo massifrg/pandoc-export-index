@@ -272,7 +272,7 @@ the alphabetical index.
 
 ## Version
 
-The current version is 0.2.0 (2024, March 21).
+The current version is 0.3.0 (2024, April 25th).
 
 ## Aknowledgements
 

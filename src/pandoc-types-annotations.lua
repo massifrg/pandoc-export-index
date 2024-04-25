@@ -8,7 +8,7 @@ Just put the following line in your sources to get help about types by LuaLs:
 
 This is version 0.1.1; you can look for updates of this file at:
 https://raw.githubusercontent.com/massifrg/pandoc-luals-annotations/main/src/pandoc-types-annotations.lua
-]]--
+]]
 
 ---@class List<T>: {[integer]: T} A Pandoc List.
 

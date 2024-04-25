@@ -1,0 +1,3 @@
+# Example documents to show indices in Pandoc
+
+WORK IN PROGRESS...

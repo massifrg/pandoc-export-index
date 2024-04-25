@@ -1,5 +1,12 @@
----A [Pandoc writer](https://pandoc.org/custom-writers.html)
----to export the index of a document in ICML.
+--[[
+    icml_with_index.lua: A [Pandoc writer](https://pandoc.org/custom-writers.html)
+                         to export an ICML file with the information to generate an index.
+    Copyright:           (c) 2024 M. Farinella
+    License:             MIT - see LICENSE file for details
+    Usage:               See README.md for details
+]]
+
+-- load type annotations from common files (just for development under VS Code/Codium)
 ---@module 'pandoc-indices'
 
 ---Add paths to search for Lua code to be loaded with `require`.

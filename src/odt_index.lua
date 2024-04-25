@@ -1,5 +1,12 @@
----A [Pandoc filter](https://pandoc.org/lua-filters.html)
----to export the index of a document in ODT.
+--[[
+    odt_index.lua: A [Pandoc filter](https://pandoc.org/lua-filters.html)
+                   to export in ODT format with the information to generate an index.
+    Copyright:     (c) 2024 M. Farinella
+    License:       MIT - see LICENSE file for details
+    Usage:         See README.md for details
+]]
+
+-- load type annotations from common files (just for development under VS Code/Codium)
 ---@module 'pandoc-types-annotations'
 ---@module 'pandoc-indices'
 

@@ -1,3 +1,10 @@
+--[[
+    pandoc-indices.lua: Lua code to manage indices in Pandoc through conventional elements.
+    Copyright:          (c) 2024 M. Farinella
+    License:            MIT - see LICENSE file for details
+    Usage:              See README.md for details
+]]
+
 ---Functions to export indices with Pandoc.
 
 -- Classes and attributes of a Pandoc Div representing an index.

@@ -1,5 +1,12 @@
----A [Pandoc writer](https://pandoc.org/custom-writers.html)
----to extract the indices of a document in JSON format. 
+--[[
+    indices2json.lua: A [Pandoc writer](https://pandoc.org/custom-writers.html)
+                      to extract the indices of a document in JSON format. 
+    Copyright:        (c) 2024 M. Farinella
+    License:          MIT - see LICENSE file for details
+    Usage:            See README.md for details
+]]
+
+-- load type annotations from common file (just for development under VS Code/Codium)
 ---@module 'pandoc-indices'
 
 ---Add paths to search for Lua code to be loaded with `require`.
