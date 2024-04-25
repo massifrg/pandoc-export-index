@@ -3,6 +3,7 @@
 ---@module 'pandoc-types-annotations'
 ---@module 'pandoc-indices'
 
+local pandoc = pandoc ---@type pandoc
 local pandoc_List = pandoc.List
 local pandoc_RawInline = pandoc.RawInline
 
@@ -99,9 +100,9 @@ local index_references_to_docx_rawinlines = {
               .. '&quot;</w:instrText>'
               .. '<w:fldChar w:fldCharType="end"/>'
               .. '</w:r>'
-          local rawinline = pandoc_RawInline('openxml', text) ---@type RawInline
+          local rawinline = pandoc_RawInline('openxml', text)
           if rawinline then
-            return pandoc_List({ span, rawinline })
+            return pandoc_List({ span, rawinline }) ---@type List<Inline>
           end
         else
           logging_warning("Found a reference to an index term with id=\"" ..
