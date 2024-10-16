@@ -29,7 +29,11 @@ local INDEX_REF_AFTER = "after"
 ---The default value of INDEX_REF_WHERE_ATTR.
 ---@type IndexRefWhere
 local INDEX_REF_WHERE_DEFAULT = INDEX_REF_AFTER
+---The attribute with the text marked for index reference.
+local INDEX_REF_TEXT_ATTR = "indexed-text"
+---The class characterizing an index term.
 local INDEX_TERM_CLASS = "index-term"
+---The attribute used as sort-key in the index.
 local INDEX_SORT_KEY_ATTR = "sort-key"
 
 local string_find = string.find
@@ -504,6 +508,7 @@ return {
   INDEX_REF_BEFORE = INDEX_REF_BEFORE,
   INDEX_REF_AFTER = INDEX_REF_AFTER,
   INDEX_REF_WHERE_DEFAULT = INDEX_REF_WHERE_DEFAULT,
+  INDEX_REF_TEXT_ATTR = INDEX_REF_TEXT_ATTR,
   INDEX_TERM_CLASS = INDEX_TERM_CLASS,
   INDEX_SORT_KEY_ATTR = INDEX_SORT_KEY_ATTR,
 }

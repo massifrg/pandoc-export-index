@@ -59,7 +59,7 @@ and it's a container of `Block`s.
 __Index references__ are `Span` inlines with:
 
 - a class that matches the `ref-class` of an index defined somewhere in the document;
-  this is __mandatory__, since it's what makes this `Span` an index reference;
+  this is __mandatory__ (unless you specify `indexed-text`, see below), since it's what makes this `Span` an index reference;
 
 - an `idref` attribute that matches the `id` attribute of a term of that index;
   this is __optional__, but if not set, you won't get this occurrence in the index;
@@ -270,9 +270,76 @@ __Insert - Table of Contents and Index - Table of Contents, Index or Bibliograph
 Though LibreOffice supports many indices, for now the only one that is created is
 the alphabetical index.
 
+## Extracting indices as Pandoc documents
+
+Suppose you have no predefined index, nor a list of words that represent the index terms.
+
+You can put references to indices in the text, with `Span` inlines.
+Those `Span`s must have a class that identifies them (see above).
+
+`compile_raw_indices.lua` is a filter that outputs one or more raw indices,
+as `Div` blocks with the `index` class (see above),
+whose contents are index terms (`Div` blocks with the `index-term` class).
+
+The terms' texts are the ones marked in the main text as references,
+and they are sorted alphabetically.
+
+Example:
+
+```sh
+pandoc -f markdown -t markdown -L compile_raw_indices.lua test.md
+```
+
+here's the result:
+
+```markdown
+:::::::: {#index .index index-name="index"}
+::: {#consequo .index-term index-name="index" count="3" sort-key="consequat"}
+consequat
+:::
+
+::: {.index-term index-name="index" count="1" sort-key="dolor"}
+dolor
+:::
+
+::: {#dolor .index-term index-name="index" count="1" sort-key="dolor"}
+dolor
+:::
+
+::: {#labor .index-term index-name="index" count="1" sort-key="labore"}
+labore
+:::
+
+::: {#labor .index-term index-name="index" count="3" sort-key="laborum"}
+laborum
+:::
+::::::::
+```
+
+It's clearly a raw index, that needs some further processing,
+but most of the task of extraction and sorting is done.
+
+Here's the example, once it's been manually reworked:
+
+```markdown
+:::::::: {#index .index index-name="index"}
+::: {#consequo .index-term index-name="index" count="3" sort-key="consequo"}
+consequo
+:::
+
+::: {#dolor .index-term index-name="index" count="2" sort-key="dolor"}
+dolor
+:::
+
+::: {#labor .index-term index-name="index" count="4" sort-key="labor"}
+labor
+:::
+::::::::
+```
+
 ## Version
 
-The current version is 0.3.0 (2024, April 25th).
+The current version is 0.4.0 (2024, October 16th).
 
 ## Aknowledgements
 
