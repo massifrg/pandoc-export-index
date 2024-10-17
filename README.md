@@ -337,16 +337,52 @@ labor
 ::::::::
 ```
 
+### Index references with a class and without `index-name`
+
+You may have references in the text specified through a class,
+instead of the `index-name` attribute.
+
+Since you start only with references, and without any index specifying
+a `ref-class`, you miss the matching between the reference classes and
+their corresponding indices.
+
+You can pass that information setting the value of the `index_ref_classes`
+variable, e.g. with `-V index_ref_classes='{"name-ref":"names","subj-ref":"subjects"}'.
+
+That tells the filter that the `Span`s with a `name-ref` class are references
+to the "names" index, while those with a `subj-ref` class are references to
+the "subjects" index.
+
+The value of the `index_ref_classes` variable is a JSON object, whose keys are
+the classes characterizing the references' `Span` inlines and whose values
+are the names of their corresponding indices.
+
 ## Sorting indices
 
-The filter `sort_indices.lua` sorts all the indices of a document.
+The filter `sort_indices.lua` sorts all terms in every index of a document.
 
 Currently (version 0.4.1), the terms are sorted accordingly to their
 sort-key attribute, in ascending alphabetical order.
 
+## Automatically assign identifiers to index terms
+
+The filter `assign_ids_to_index_terms.lua` assigns an identifier to any index term
+of any index.
+
+If a term has already an identifier, the filter does not change it,
+unless you set the variable `ids_reset` with the `-V ids_reset=true` option.
+
+Identifiers are the concatenation of a _prefix_ and a _counter_.
+
+The default value for the _prefix_ is the index name, but you can change it
+setting the `ids_prefixes` variable, e.g. `-V ids_prefixes='{"names":"n_"}'.
+
+The value of `ids_prefixes` is a JSON object where keys are the index names
+and values are the corresponding prefixes.
+
 ## Version
 
-The current version is 0.4.1 (2024, October 16th).
+The current version is 0.4.2 (2024, October 17th).
 
 ## Aknowledgements
 
