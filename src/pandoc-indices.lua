@@ -169,6 +169,13 @@ local function isIndexDiv(div)
   return hasClass(div, INDEX_CLASS)
 end
 
+---Checks whether a `Div` is meant to define an index term.
+---@param div Div A Pandoc Div.
+---@return boolean
+local function isIndexTermDiv(div)
+  return hasClass(div, INDEX_TERM_CLASS)
+end
+
 ---Get an index object corresponding to the `Div`, if it's an index `Div`.
 ---@param div Div   The `Div` block that could be an index `Div`.
 ---@param log boolean Produce a log message as side effect.
@@ -495,6 +502,7 @@ return {
   hasClass = hasClass,
   isIndexDiv = isIndexDiv,
   isIndexRef = isIndexRef,
+  isIndexTermDiv = isIndexTermDiv,
   textForXml = textForXml,
   logging_error = logging_error,
   logging_warning = logging_warning,

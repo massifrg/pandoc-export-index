@@ -337,9 +337,16 @@ labor
 ::::::::
 ```
 
+## Sorting indices
+
+The filter `sort_indices.lua` sorts all the indices of a document.
+
+Currently (version 0.4.1), the terms are sorted accordingly to their
+sort-key attribute, in ascending alphabetical order.
+
 ## Version
 
-The current version is 0.4.0 (2024, October 16th).
+The current version is 0.4.1 (2024, October 16th).
 
 ## Aknowledgements
 
