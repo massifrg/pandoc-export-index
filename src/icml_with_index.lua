@@ -70,7 +70,7 @@ end
 
 -- Adding a field to the IndexTerm class for ICML
 ---@class IndexTerm A term inside an Index.
----@field icml string  Like the text field, but normalized for ICML.
+---@field icml? string  Like the text field, but normalized for ICML.
 
 ---@type Index[]
 local indices = {}

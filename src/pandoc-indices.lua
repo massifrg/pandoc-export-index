@@ -43,9 +43,8 @@ local string_sub = string.sub
 local table_concat = table.concat
 local table_insert = table.insert
 local pandoc = pandoc
-local pandoc_List = pandoc.List
-local pandoc_Pandoc = pandoc.Pandoc
-local pandoc_RawInline = pandoc.RawInline
+local List = pandoc.List
+local Pandoc = pandoc.Pandoc
 local pandoc_write = pandoc.write
 local utf8len = pandoc.text.len
 local utf8lower = pandoc.text.lower
@@ -87,9 +86,12 @@ end
 
 ---@class IndexTerm A term inside an Index.
 ---@field id      string  The term identifier.
+---@field level   integer The term's level (1=head, 2=sub, 3=subsub, ...)
 ---@field sortKey string  The key to sort the term with.
 ---@field text    string  The content of the term as a string without styles.
 ---@field blocks  Block[] The content of the term as Pandoc Blocks.
+---@field html?   string  The content of the term rendered as HTML.
+---@field subs?   IndexTerm[] The eventual sub-terms.
 
 ---@class IndexRef A reference to an `IndexTerm` in the text.
 ---@field indexName string The name of the index.
@@ -347,30 +349,52 @@ local function computeSortKey(text)
   return sort_key
 end
 
+---A filter to remove all the `Div`s that represent terms of indices.
+---@type Filter
+local expungeIndexTerms = {
+  Div = function(div)
+    if hasClass(div, INDEX_TERM_CLASS) then
+      return List({})
+    end
+  end
+}
+
 ---Add an IndexTerm to the table of the terms of an index.
 ---@param index_name string      The index name.
 ---@param id         string      The term identifier.
+---@param level      integer     The term level.
 ---@param sort_key   string|nil  The string to use to sort terms.
 ---@param content    Block[]|nil The content of the term.
-local function addIndexTerm(index_name, id, sort_key, content)
+local function createIndexTerm(index_name, id, level, sort_key, content)
   local index_terms = terms[index_name]
   if not index_terms then
     terms[index_name] = {}
     index_terms = terms[index_name]
   end
-  local content_as_doc = pandoc_Pandoc(content)
+  local content_as_doc = Pandoc(content)
   local sortKey = sort_key
+  local content_without_subs = content_as_doc:walk({ expungeIndexTerms })
   if not sortKey then
-    sortKey = computeSortKey(pandoc_write(pandoc_Pandoc(content), 'plain', { wrap_text = "preserve" }))
-    -- logging_info('Text for sort key: "' .. sortKey .. '"')
+    sortKey = computeSortKey(pandoc_write(
+      Pandoc(content_without_subs.blocks),
+      'plain',
+      { wrap_text = "preserve" }
+    ))
   end
-  local text = pandoc_write(content_as_doc, "plain", { wrap_text = "preserve" })
-  table_insert(index_terms, {
+  -- logging_info('Text for sort key: "' .. sortKey .. '"')
+  local text = pandoc_write(content_without_subs, "plain", { wrap_text = "preserve" })
+  local html = pandoc_write(content_without_subs, "html", { wrap_text = "preserve" })
+  local l = level or 1
+  ---@type IndexTerm
+  local term = {
     id = id,
+    level = l,
     sortKey = sortKey,
-    text = text,
-    blocks = content_as_doc.blocks
-  })
+    text = string_gsub(text, "[\r\n]+$", ""),
+    blocks = content_without_subs.blocks,
+    html = html
+  }
+  return term
 end
 
 ---Find an `IndexTerm` with an `id`
@@ -437,7 +461,9 @@ local collect_index_terms = {
   Div = function(div)
     local index_name, id, sort_key, content = indexTermFromDiv(div)
     if index_name and id then
-      addIndexTerm(index_name, id, sort_key, content)
+      local term = createIndexTerm(index_name, id, 1, sort_key, content)
+      local index_terms = terms[index_name]
+      table_insert(index_terms, term)
     end
   end
 }
@@ -465,7 +491,9 @@ local collect_indices = {
     else
       local index_name, id, sort_key = indexTermFromDiv(div)
       if index_name and id then
-        addIndexTerm(index_name, id, sort_key, div.content)
+        local term = createIndexTerm(index_name, id, 1, sort_key, div.content)
+        local index_terms = terms[index_name]
+        table_insert(index_terms, term)
       end
     end
   end
@@ -483,16 +511,6 @@ local function collectIndices(doc)
     terms = terms
   }
 end
-
----A filter to remove all the `Div`s that represent terms of indices.
----@type Filter
-local expungeIndexTerms = {
-  Div = function(div)
-    if hasClass(div, INDEX_TERM_CLASS) then
-      return pandoc.List({})
-    end
-  end
-}
 
 return {
   collectIndices = collectIndices,
