@@ -471,7 +471,9 @@ local collect_index_terms = {
 ---A Pandoc filter that collects all the `Div` blocks that define an index
 ---(i.e. that have the `INDEX_CLASS` class).
 local collect_indices = {
+
   traverse = 'topdown',
+
   Div = function(div)
     local index = indexFromDiv(div, true)
     if index then
@@ -486,15 +488,15 @@ local collect_indices = {
       )
       local prev_index_name = current_index_name
       current_index_name = index.name
-      pandoc.walk_block(div, collect_index_terms)
+      div:walk(collect_index_terms)
       current_index_name = prev_index_name
-    else
-      local index_name, id, sort_key = indexTermFromDiv(div)
-      if index_name and id then
-        local term = createIndexTerm(index_name, id, 1, sort_key, div.content)
-        local index_terms = terms[index_name]
-        table_insert(index_terms, term)
-      end
+    -- else
+    --   local index_name, id, sort_key = indexTermFromDiv(div)
+    --   if index_name and id then
+    --     local term = createIndexTerm(index_name, id, 1, sort_key, div.content)
+    --     local index_terms = terms[index_name]
+    --     -- table_insert(index_terms, term)
+    --   end
     end
   end
 }
