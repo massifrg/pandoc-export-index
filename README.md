@@ -382,7 +382,7 @@ and values are the corresponding prefixes.
 
 ## Version
 
-The current version is 0.4.2 (2024, October 17th).
+The current version is 0.4.3 (2024, October 18th).
 
 ## Aknowledgements
 
