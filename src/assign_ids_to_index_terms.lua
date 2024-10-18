@@ -84,10 +84,10 @@ local function getNextIdForIndex(index_name)
   local counter
   while not counter do
     counter = counters[index_name] + 1
-    local prefix = idsPrefixes[current_index] or current_index .. "_"
+    local prefix = idsPrefixes[index_name] or index_name .. "_"
     local identifier = prefix .. tostring(counter)
     if not current_identifiers[identifier] then
-      counters[current_index] = counter
+      counters[index_name] = counter
       return identifier
     end
   end
@@ -106,7 +106,7 @@ local assign_ids_to_index_terms_filter = {
     end
     if isIndexTermDiv(div) then
       local current_id = div.identifier
-      if not current_id or current_id =='' or idsReset then
+      if not current_id or current_id == '' or idsReset then
         local identifier = getNextIdForIndex(current_index)
         -- check if index-name is different from current_index
         local index_name_attr = div.attributes[INDEX_NAME_ATTR]
