@@ -252,7 +252,7 @@ When you open the resulting DOCX file, you won't see an index.
 You must create it explicitly (e.g. __References -> Insert index__)
 with your word processing app (e.g. Word).
 
-## Exporting indices to DOCX: the `odt_index.lua` filter
+## Exporting indices to ODT: the `odt_index.lua` filter
 
 `odt_index.lua` is a filter that injects references to index terms in the text.
 
