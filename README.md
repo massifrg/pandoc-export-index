@@ -270,7 +270,119 @@ __Insert - Table of Contents and Index - Table of Contents, Index or Bibliograph
 Though LibreOffice supports many indices, for now the only one that is created is
 the alphabetical index.
 
-## Extracting indices as Pandoc documents
+## Generating an index
+
+To generate an index for your document(s), you can
+
+- start from a predefined list of words (e.g. names or topics)
+  that represent the index terms
+
+- mark references to indices in your texts, and then collect
+  and organize the references into a list of index terms
+
+### An index from a list of words or paragraphs
+
+The filter `paras_to_index_terms.lua` takes a list of paragraphs (i.e. one term per line),
+and encapsulates all the paragraphs in `Div` blocks that represent index terms.
+
+Then all those `Div` terms are encapsulated in one `Div` that represents the index.
+
+The filter works only on paragraphs that are children of the main Pandoc "root" element.
+If your document has `Div` blocks that contain paragraphs, they are kept untouched in the
+output document.
+
+Example (`phonetic.md`)
+
+```markdown
+# Phonetic alphabet
+
+alpha
+
+bravo
+
+charlie
+
+# Another title
+```
+
+Running `pandoc -f markdown -t native -L paras_to_index_terms.lua phonetic.md`, you get:
+
+```
+[ Header
+    1
+    ( "phonetic-alphabet" , [] , [] )
+    [ Str "Phonetic" , Space , Str "alphabet" ]
+, Header
+    1
+    ( "another-title" , [] , [] )
+    [ Str "Another" , Space , Str "title" ]
+, Div
+    ( ""
+    , [ "index" ]
+    , [ ( "index-name" , "index" )
+      , ( "ref-class" , "index-ref" )
+      ]
+    )
+    [ Div
+        ( "" , [ "index-term" ] , [ ( "index-name" , "index" ) ] )
+        [ Para [ Str "alpha" ] ]
+    , Div
+        ( "" , [ "index-term" ] , [ ( "index-name" , "index" ) ] )
+        [ Para [ Str "bravo" ] ]
+    , Div
+        ( "" , [ "index-term" ] , [ ( "index-name" , "index" ) ] )
+        [ Para [ Str "charlie" ] ]
+    ]
+]
+```
+
+You can specify the index name and the class for references in the text, like this:
+
+```sh
+pandoc -f markdown -t native -L paras_to_index_terms.lua -V index_name=phonetic -V ref_class=phonetic-ref phonetic.md
+```
+
+and you get:
+
+```
+[ Header
+    1
+    ( "phonetic-alphabet" , [] , [] )
+    [ Str "Phonetic" , Space , Str "alphabet" ]
+, Header
+    1
+    ( "another-title" , [] , [] )
+    [ Str "Another" , Space , Str "title" ]
+, Div
+    ( ""
+    , [ "index" ]
+    , [ ( "ref-class" , "phonetic-ref" )
+      , ( "index-name" , "phonetic" )
+      ]
+    )
+    [ Div
+        ( ""
+        , [ "index-term" ]
+        , [ ( "index-name" , "phonetic" ) ]
+        )
+        [ Para [ Str "alpha" ] ]
+    , Div
+        ( ""
+        , [ "index-term" ]
+        , [ ( "index-name" , "phonetic" ) ]
+        )
+        [ Para [ Str "bravo" ] ]
+    , Div
+        ( ""
+        , [ "index-term" ]
+        , [ ( "index-name" , "phonetic" ) ]
+        )
+        [ Para [ Str "charlie" ] ]
+    ]
+]
+```
+
+### Indices from references in your documents
 
 Suppose you have no predefined index, nor a list of words that represent the index terms.
 
@@ -337,7 +449,7 @@ labor
 ::::::::
 ```
 
-### Index references with a class and without `index-name`
+#### Index references with a class and without `index-name`
 
 You may have references in the text specified through a class,
 instead of the `index-name` attribute.
@@ -382,7 +494,7 @@ and values are the corresponding prefixes.
 
 ## Version
 
-The current version is 0.4.3 (2024, October 18th).
+The current version is 0.4.4 (2024, November 1st).
 
 ## Aknowledgements
 
