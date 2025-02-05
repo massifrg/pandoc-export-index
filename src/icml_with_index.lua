@@ -28,6 +28,8 @@ end
 addPathsToLuaPath({ pandoc.path.directory(PANDOC_SCRIPT_FILE) })
 local pandocIndices = require('pandoc-indices')
 
+---The value of the `Self` attribute in the `Index` element.
+local ICML_INDEX_ID = "ndx"
 ---A string used in ICML index topics.
 local ICML_TOPICN = "Topicn"
 ---The max length of the `Name` attribute in an index `Topic` in ICML.
@@ -170,16 +172,23 @@ end
 ---Create an index topic for ICML.
 ---@param  prefix string    A prefix for the topic identifier.
 ---@param  term   IndexTerm A term of the index.
+---@param  isOpen boolean   `true` if the topic has sub-topics.
 ---@return string
-local function getIcmlTopic(prefix, term)
+local function getIcmlTopic(prefix, term, isOpen)
   if not term.icml then
     term.icml = normalizeIcmlText(term.text)
+  end
+  local ending
+  if isOpen then
+    ending = ' >'
+  else
+    ending = ' />'
   end
   return '<Topic'
       .. ' Self="' .. prefix .. ICML_TOPICN .. term.icml .. '"'
       .. ' SortOrder="' .. (term.sortKey or '') .. '"'
       .. ' Name="' .. term.icml .. '"'
-      .. ' />'
+      .. ending
 end
 
 ---A Pandoc filter that inserts the index references in the ICML text.
@@ -214,22 +223,66 @@ local insert_index_references = {
   end
 }
 
+---Generate a pseudo-IndexTerm for an Index that is used as the first level of a multiple index.
+---@param index Index
+---@return IndexTerm
+local function indexAsIndexTerm(index)
+  return {
+    id      = index.name,
+    leve    = 1,
+    sortKey = index.name,
+    text    = index.name,
+    blocks  = pandoc.Header(1, { pandoc.Str(index.name) }),
+    html    = '<h1>' .. index.name .. '</h1>',
+    subs    = terms[index.name] or {}
+  }
+end
+
+local LEVEL_INDENTATION = { "", "  ", "    ", "      "}
+
+---Appends the topics' XML lines of the terms of an index.
+---@param index_lines string[] The lines of the resulting XML index.
+---@param level integer The current level of the terms (1 = head terms or indices in case of multiple indices).
+---@param prefix string The prefix in the topic `Name` attribute.
+---@param index_terms IndexTerm[] The index terms or the sub-terms of a term.
+local function addTermsToIndexLines(index_lines, level, prefix, index_terms)
+  for t = 1, #index_terms do
+    local term = index_terms[t]
+    local hasSubs = #term.subs > 0
+    local indentation = LEVEL_INDENTATION[level] or ""
+    table_insert(index_lines, indentation .. getIcmlTopic(prefix, term, hasSubs))
+    if hasSubs then
+      addTermsToIndexLines(index_lines, level + 1, prefix .. ICML_TOPICN, term.subs)
+      table_insert(index_lines, indentation .. '</Topic>')
+    end
+  end
+end
+
 ---A Pandoc filter that sets the `index` variable to be used in `WriterOptions.variables`.
 ---It does not change the document.
 ---@type Filter
 local set_index_variable = {
   Pandoc = function(doc)
     local index_lines = {}
-    for i = 1, #indices do
-      local index = indices[i]
-      table_insert(index_lines, '<Index Self="' .. index.prefix .. '">')
-      local index_terms = terms[index.name] or {}
-      for t = 1, #index_terms do
-        local term = index_terms[t]
-        table_insert(index_lines, getIcmlTopic(index.prefix, term))
-      end
-      table_insert(index_lines, '</Index>')
+    -- when there's more than one index, use the first level of InDesign only index for indices.
+    local just_one_index = #indices == 1
+    -- set the starting prefix: ICML_INDEX_ID if there's one index, append the index name if there are more indices
+    local prefix = ICML_INDEX_ID
+    if just_one_index then
+      prefix = indices[1].prefix
     end
+    ---@type IndexTerm[] The terms of the base level (head terms of the only index or the indices)
+    local level1terms = {}
+    if just_one_index then
+      level1terms = terms[indices[1].name]
+    else
+      for i = 1, #indices do
+        table_insert(level1terms, indexAsIndexTerm(indices[i]))
+      end
+    end
+    table_insert(index_lines, '<Index Self="' .. prefix .. '">')
+    addTermsToIndexLines(index_lines, 1, prefix, level1terms)
+    table_insert(index_lines, '</Index>')
     index_var = table_concat(index_lines, '\n')
     return doc
   end
