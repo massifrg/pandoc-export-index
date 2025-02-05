@@ -45,6 +45,8 @@ local table_insert = table.insert
 local pandoc = pandoc
 local List = pandoc.List
 local Pandoc = pandoc.Pandoc
+local Para = pandoc.Para
+local Str = pandoc.Str
 local pandoc_write = pandoc.write
 local utf8len = pandoc.text.len
 local utf8lower = pandoc.text.lower
@@ -91,7 +93,7 @@ end
 ---@field text    string  The content of the term as a string without styles.
 ---@field blocks  Block[] The content of the term as Pandoc Blocks.
 ---@field html?   string  The content of the term rendered as HTML.
----@field subs?   IndexTerm[] The eventual sub-terms.
+---@field subs    IndexTerm[] The eventual sub-terms.
 
 ---@class IndexRef A reference to an `IndexTerm` in the text.
 ---@field indexName string The name of the index.
@@ -392,7 +394,8 @@ local function createIndexTerm(index_name, id, level, sort_key, content)
     sortKey = sortKey,
     text = string_gsub(text, "[\r\n]+$", ""),
     blocks = content_without_subs.blocks,
-    html = html
+    html = html,
+    subs = {}
   }
   return term
 end
@@ -455,18 +458,40 @@ local function textForXml(text, options)
   return forxml
 end
 
+local current_level = 0
+
 ---A Pandoc filter that collects all the index terms
 ---from the `Div`s that have the `INDEX_TERM_CLASS`.
 local collect_index_terms = {
-  Div = function(div)
-    local index_name, id, sort_key, content = indexTermFromDiv(div)
-    if index_name and id then
-      local term = createIndexTerm(index_name, id, 1, sort_key, content)
-      local index_terms = terms[index_name]
-      table_insert(index_terms, term)
-    end
-  end
+  traverse = 'topdown',
+  -- Div = collectIndexTerms
 }
+
+local collectIndexTerms = function(div)
+  local index_name, id, sort_key, content = indexTermFromDiv(div)
+  if index_name and id then
+    current_level = current_level + 1
+    local term = createIndexTerm(index_name, id, current_level, sort_key, content)
+    local cur_index_terms = terms[index_name]
+    local index_terms
+    index_terms = cur_index_terms
+    for l = 2, current_level do
+      if #index_terms == 0 then
+        table_insert(
+          index_terms,
+          createIndexTerm(index_name, "", l - 1, "", Para({ Str("{EMPTY}") }))
+        )
+      end
+      index_terms = index_terms[#index_terms].subs
+    end
+    table_insert(index_terms, term)
+    div:walk(collect_index_terms)
+    current_level = current_level - 1
+    return nil, false
+  end
+end
+
+collect_index_terms.Div = collectIndexTerms
 
 ---A Pandoc filter that collects all the `Div` blocks that define an index
 ---(i.e. that have the `INDEX_CLASS` class).
@@ -490,19 +515,19 @@ local collect_indices = {
       current_index_name = index.name
       div:walk(collect_index_terms)
       current_index_name = prev_index_name
-    -- else
-    --   local index_name, id, sort_key = indexTermFromDiv(div)
-    --   if index_name and id then
-    --     local term = createIndexTerm(index_name, id, 1, sort_key, div.content)
-    --     local index_terms = terms[index_name]
-    --     -- table_insert(index_terms, term)
-    --   end
+      -- else
+      --   local index_name, id, sort_key = indexTermFromDiv(div)
+      --   if index_name and id then
+      --     local term = createIndexTerm(index_name, id, 1, sort_key, div.content)
+      --     local index_terms = terms[index_name]
+      --     -- table_insert(index_terms, term)
+      --   end
     end
   end
 }
 
 ---Collect all the indices from a Pandoc document.
----@param doc table A Pandoc document.
+---@param doc Pandoc A Pandoc document.
 ---@return DocumentIndices
 local function collectIndices(doc)
   indices = {}
