@@ -70,18 +70,26 @@ if logging then
 end
 -- end of functions for logging
 
--- Adding a field to the IndexTerm class for ICML
----@class IndexTerm A term inside an Index.
----@field icml? string  Like the text field, but normalized for ICML.
+-- Extending the IndexTerm class for ICML
+---@class IcmlIndexTerm: IndexTerm A term inside an Index.
+---@field icml string Like the text field, but normalized for ICML.
+---@field icmlid string The value of the Self attribute in the ICML Topic element of the term.
 
+---The properties of all the indices of the document.
 ---@type Index[]
 local indices = {}
 ---The content of the index in ICML to be passed in `WriterOptions.variables`
 ---to [pandoc.write](https://pandoc.org/lua-filters.html#pandoc.write).
 ---@type string
 local index_var = ""
----@type table<IndexName,IndexTerm[]>
+---All the terms of all indices.
+---@type table<IndexName,IcmlIndexTerm[]>
 local terms = {}
+---Since ICML supports only one index, the Writer changes its behavior
+---when there are multiple indices; in that case we sacrifice the first level
+---to discriminate among them.
+---@type boolean
+local just_one_index = true
 
 local _isIndexRef = pandocIndices.isIndexRef
 local hasClass = pandocIndices.hasClass
@@ -101,28 +109,33 @@ end
 
 ---A table that associates the id of an index term
 -- to the array index (offset) in terms[index_name]
----@type table<IndexName, table<string,integer>>
-local term_id_to_array_index = {}
+---@type table<IndexName, table<string,IcmlIndexTerm>>
+local term_id_to_term = {}
 ---Retrieves an index term that has an id.
 ---@param index_name IndexName The name of the index.
 ---@param id         string    The index term identifier.
----@return IndexTerm|nil
+---@return IcmlIndexTerm|nil
 local function getIndexTermById(index_name, id)
   local index_terms = terms[index_name] or {}
-  if not term_id_to_array_index[index_name] then
-    local id_to_array_index = {}
-    for t = 1, #index_terms do
-      local term = index_terms[t]
-      if term.id then
-        id_to_array_index[term.id] = t
+  if not term_id_to_term[index_name] then
+    local id_to_term = {}
+
+    local function memorizeTerms(tt)
+      for i = 1, #tt do
+        local term = tt[i]
+        if term.id then
+          id_to_term[term.id] = term
+        end
+        if #term.subs > 0 then
+          memorizeTerms(term.subs)
+        end
       end
     end
-    term_id_to_array_index[index_name] = id_to_array_index
+    memorizeTerms(index_terms)
+
+    term_id_to_term[index_name] = id_to_term
   end
-  local i = term_id_to_array_index[index_name][id]
-  if i then
-    return index_terms[i]
-  end
+  return term_id_to_term[index_name][id]
 end
 
 ---Normalize the text that goes into an ICML Index.
@@ -152,9 +165,10 @@ local function getIcmlReference(idref, index_name, index_prefix)
     if not term.icml then
       term.icml = normalizeIcmlText(term.text)
     end
-    local ref_topic_attr = ' ReferencedTopic="' ..
-        index_prefix .. ICML_TOPICN .. term.icml ..
-        '"'            -- ' ReferencedTopic="u115Topicnesempio"'
+    local ref_topic_attr = ' ReferencedTopic="' .. term.icmlid .. '"'
+    -- local ref_topic_attr = ' ReferencedTopic="' ..
+    --     index_prefix .. ICML_TOPICN .. term.icml ..
+    --     '"'            -- ' ReferencedTopic="u115Topicnesempio"'
     local id_attr = '' -- ' Id="1"'
     local text = '<CharacterStyleRange AppliedCharacterStyle="CharacterStyle/$ID/[No character style]">\n'
         .. '  <PageReference'
@@ -171,13 +185,14 @@ end
 
 ---Create an index topic for ICML.
 ---@param  prefix string    A prefix for the topic identifier.
----@param  term   IndexTerm A term of the index.
+---@param  term   IcmlIndexTerm A term of the index.
 ---@param  isOpen boolean   `true` if the topic has sub-topics.
 ---@return string
 local function getIcmlTopic(prefix, term, isOpen)
   if not term.icml then
     term.icml = normalizeIcmlText(term.text)
   end
+  term.icmlid = prefix .. ICML_TOPICN .. term.icml
   local ending
   if isOpen then
     ending = ' >'
@@ -185,7 +200,7 @@ local function getIcmlTopic(prefix, term, isOpen)
     ending = ' />'
   end
   return '<Topic'
-      .. ' Self="' .. prefix .. ICML_TOPICN .. term.icml .. '"'
+      .. ' Self="' .. term.icmlid .. '"'
       .. ' SortOrder="' .. (term.sortKey or '') .. '"'
       .. ' Name="' .. term.icml .. '"'
       .. ending
@@ -196,16 +211,14 @@ end
 local insert_index_references = {
   Span = function(span)
     local is_index_ref, index = isIndexRef(span)
+    index = index or { name = "unknown index" } ---@type Index
     if is_index_ref then
       local idref = span.attributes.idref
       if idref then
-        ---@diagnostic disable-next-line: need-check-nil
         logging_info('Found reference for index "' .. index.name .. '", term with idref=' .. idref)
         local inlines = pandoc.List({})
-        ---@diagnostic disable-next-line: need-check-nil
         local ref = getIcmlReference(idref, index.name, index.prefix)
         if ref then
-          ---@diagnostic disable-next-line: need-check-nil
           if index.refWhere == INDEX_REF_BEFORE then
             inlines:extend(ref)
             inlines:extend(span.content)
@@ -223,9 +236,9 @@ local insert_index_references = {
   end
 }
 
----Generate a pseudo-IndexTerm for an Index that is used as the first level of a multiple index.
+---Generate a pseudo-IcmlIndexTerm for an Index that is used as the first level of a multiple index.
 ---@param index Index
----@return IndexTerm
+---@return IcmlIndexTerm
 local function indexAsIndexTerm(index)
   return {
     id      = index.name,
@@ -238,13 +251,13 @@ local function indexAsIndexTerm(index)
   }
 end
 
-local LEVEL_INDENTATION = { "", "  ", "    ", "      "}
+local LEVEL_INDENTATION = { "", "  ", "    ", "      " }
 
 ---Appends the topics' XML lines of the terms of an index.
 ---@param index_lines string[] The lines of the resulting XML index.
 ---@param level integer The current level of the terms (1 = head terms or indices in case of multiple indices).
 ---@param prefix string The prefix in the topic `Name` attribute.
----@param index_terms IndexTerm[] The index terms or the sub-terms of a term.
+---@param index_terms IcmlIndexTerm[] The index terms or the sub-terms of a term.
 local function addTermsToIndexLines(index_lines, level, prefix, index_terms)
   for t = 1, #index_terms do
     local term = index_terms[t]
@@ -252,7 +265,7 @@ local function addTermsToIndexLines(index_lines, level, prefix, index_terms)
     local indentation = LEVEL_INDENTATION[level] or ""
     table_insert(index_lines, indentation .. getIcmlTopic(prefix, term, hasSubs))
     if hasSubs then
-      addTermsToIndexLines(index_lines, level + 1, prefix .. ICML_TOPICN, term.subs)
+      addTermsToIndexLines(index_lines, level + 1, prefix .. ICML_TOPICN .. term.icml, term.subs)
       table_insert(index_lines, indentation .. '</Topic>')
     end
   end
@@ -265,13 +278,13 @@ local set_index_variable = {
   Pandoc = function(doc)
     local index_lines = {}
     -- when there's more than one index, use the first level of InDesign only index for indices.
-    local just_one_index = #indices == 1
+    just_one_index = #indices == 1
     -- set the starting prefix: ICML_INDEX_ID if there's one index, append the index name if there are more indices
     local prefix = ICML_INDEX_ID
     if just_one_index then
       prefix = indices[1].prefix
     end
-    ---@type IndexTerm[] The terms of the base level (head terms of the only index or the indices)
+    ---@type IcmlIndexTerm[] The terms of the base level (head terms of the only index or the indices)
     local level1terms = {}
     if just_one_index then
       level1terms = terms[indices[1].name]
@@ -289,7 +302,7 @@ local set_index_variable = {
 }
 
 ---Pandoc filters to be applied to the document, to produce an ICML with an index.
-local indices_filters = { insert_index_references, set_index_variable, pandocIndices.expungeIndexTerms }
+local indices_filters = { set_index_variable, insert_index_references, pandocIndices.expungeIndexTerms }
 
 ---Pandoc writer to produce an ICML document with an index.
 function Writer(doc, opts)

@@ -225,7 +225,16 @@ local function indexTermFromDiv(div)
     local id = div.identifier
     local index_name = attrs[INDEX_NAME_ATTR] or current_index_name
     local sort_key = attrs[INDEX_SORT_KEY_ATTR]
-    return index_name, id, sort_key, div.content
+    -- remove sub-terms from content
+    local content = List()
+    local div_content = div.content
+    for i =1, #div_content do
+      local block = div_content[i]
+      if not isIndexTermDiv(block) then
+        content:insert(block)
+      end
+    end
+    return index_name, id, sort_key, content
   end
 end
 
