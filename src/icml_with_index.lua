@@ -238,12 +238,13 @@ local insert_index_references = {
 
 ---Generate a pseudo-IcmlIndexTerm for an Index that is used as the first level of a multiple index.
 ---@param index Index
+---@param sortKey? string An optional sort key to order indices.
 ---@return IcmlIndexTerm
-local function indexAsIndexTerm(index)
+local function indexAsIndexTerm(index, sortKey)
   return {
     id      = index.name,
     leve    = 1,
-    sortKey = index.name,
+    sortKey = sortKey or index.name,
     text    = index.name,
     blocks  = pandoc.Header(1, { pandoc.Str(index.name) }),
     html    = '<h1>' .. index.name .. '</h1>',
@@ -290,7 +291,7 @@ local set_index_variable = {
       level1terms = terms[indices[1].name]
     else
       for i = 1, #indices do
-        table_insert(level1terms, indexAsIndexTerm(indices[i]))
+        table_insert(level1terms, indexAsIndexTerm(indices[i], tostring(i)))
       end
     end
     table_insert(index_lines, '<Index Self="' .. prefix .. '">')
