@@ -5,18 +5,24 @@ This software is a collection of [Pandoc](https://pandoc.org)
 and [custom writers](https://pandoc.org/custom-writers.html)
 to export a document with indices in these formats:
 
-- InDesign ICML
+- ICML: sub-terms and multiple indices (using the first level) are supported
 
-- docx
+- docx (no support for sub-terms yet)
 
-- odt
+- odt (no support for sub-terms yet)
 
 - ~~ConTeXt~~
 
 - ~~LaTeX~~
 
-Currently there's only a [Writer](https://pandoc.org/custom-writers.html)
-to export an index (one level only) to an ICML standalone document (`-s` option in Pandoc).
+Version 0.5.0 introduces support for multiple levels (index terms can have sub-terms).
+
+Sub-terms are detected in the common utils of `pandoc-indices.lua`, and they are used
+by `icml_with_index.lua`, but **I have still to adapt all the other scripts to the new
+feature, so they may not work with indices with sub-terms yet**.
+
+This software is a side-project of [pundok-editor](https://github.com/massifrg/pundok-editor),
+but you can use it without it, just following the same conventions (see below).
 
 ## What is needed to specify indices
 
@@ -195,9 +201,12 @@ and you'll get something like this:
 
 ## Exporting an index to ICML: the `icml_with_index.lua` Writer
 
-InDesign has only one index, so you can't define more indices inside a document
-(actually there's a workaround, using the first level of the index to discriminate
-among different indices, but it may an option for future versions of this software).
+ICML has only one index, so you can't define more indices inside a document.
+But there's a workaround: you can use the first level of the index to discriminate
+between different indices.
+
+Since version 0.5.0, that's what the `icml_with_index.lua` custom writer does,
+when your document has more than one index.
 
 In ICML, the actual index is in a `<Index>` element that lives outside the main `<Story>`
 element, so you can't add it through a filter, because filters can only modify the
@@ -210,14 +219,15 @@ and a custom writer:
 pandoc -f markdown -t icml_with_index.lua -s test.md
 ```
 
-The custom writer can modify the default template for ICML on the fly, putting an `$index$` before
-`<Story Self="pandoc_story"`, then fill the `index` variable with the index contents.
+The custom writer can modify the default template for ICML on the fly,
+putting an `$index$` before `<Story Self="pandoc_story">`, then fill
+the `index` variable with the index contents.
 
 Here's the custom writer's main function:
 
 ```lua
 function Writer(doc, opts)
- local collected = pandocIndices.collectIndices(doc)
+  local collected = pandocIndices.collectIndices(doc)
   indices = collected.indices
   terms = collected.terms
   local filtered = doc
@@ -473,8 +483,8 @@ are the names of their corresponding indices.
 
 The filter `sort_indices.lua` sorts all terms in every index of a document.
 
-Currently (version 0.4.1), the terms are sorted accordingly to their
-sort-key attribute, in ascending alphabetical order.
+Currently the terms are sorted accordingly to their sort-key attribute,
+in ascending alphabetical order.
 
 ## Automatically assign identifiers to index terms
 
@@ -494,7 +504,12 @@ and values are the corresponding prefixes.
 
 ## Version
 
-The current version is 0.4.4 (2024, November 1st).
+The current version is 0.5.0 (2025, February 7th).
+
+## Changelog
+
+- Version 0.5.0: added support for multiple levels in general,
+                 and for multiple levels/indices in ICML.
 
 ## Aknowledgements
 
