@@ -38,37 +38,11 @@ local MAX_ICML_TERM_TEXT_LENGTH = nil
 
 local pandoc = pandoc
 local string_find = string.find
-local string_gsub = string.gsub
 local string_sub = string.sub
 local table_insert = table.insert
 local table_concat = table.concat
-local utf8sub = pandoc.text.sub
-
--- beginning of functions for logging
----@module 'logging'
-
----Write a warning message to the standard error.
-local function logging_info(i)
-  io.stderr:write('(I) icml_with_index: ' .. i .. '\n')
-end
----Write an informative message to the standard error.
-local function logging_warning(w)
-  io.stderr:write('(W) icml_with_index: ' .. w .. '\n')
-end
----Write an error message to the standard error.
-local function logging_error(e)
-  io.stderr:write('(W) icml_with_index: ' .. e .. '\n')
-end
-local logging
-if pcall(require, "logging") then
-  logging = require("logging")
-end
-if logging then
-  logging_info = logging.info
-  logging_warning = logging.warning
-  logging_error = logging.error
-end
--- end of functions for logging
+local log_info = pandoc.log.info
+local log_warn = pandoc.log.warn
 
 -- Extending the IndexTerm class for ICML
 ---@class IcmlIndexTerm: IndexTerm A term inside an Index.
@@ -155,7 +129,7 @@ end
 ---@param index_prefix string The prefix of the index.
 local function getIcmlReference(idref, index_name, index_prefix)
   if not idref then
-    logging_warning("can't get a reference without an idref")
+    log_warn("can't get a reference without an idref")
     return
   end
   local term = getIndexTermById(index_name or INDEX_NAME_DEFAULT, idref)
@@ -215,7 +189,7 @@ local insert_index_references = {
     if is_index_ref then
       local idref = span.attributes.idref
       if idref then
-        logging_info('Found reference for index "' .. index.name .. '", term with idref=' .. idref)
+        log_info('Found reference for index "' .. index.name .. '", term with idref=' .. idref)
         local inlines = pandoc.List({})
         local ref = getIcmlReference(idref, index.name, index.prefix)
         if ref then
@@ -230,7 +204,7 @@ local insert_index_references = {
         end
       else
         ---@diagnostic disable-next-line: need-check-nil
-        logging_warning('Found reference for index "' .. index.name .. '" without an idref')
+        log_warn('Found reference for index "' .. index.name .. '" without an idref')
       end
     end
   end
@@ -312,7 +286,7 @@ function Writer(doc, opts)
   terms = collected.terms
   local filtered = doc
   for i = 1, #indices_filters do
-    logging_info("applying filter #" .. i)
+    log_info("applying filter #" .. i)
     local filter = indices_filters[i]
     filtered = filtered:walk(filter)
   end

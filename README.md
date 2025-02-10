@@ -232,7 +232,7 @@ function Writer(doc, opts)
   terms = collected.terms
   local filtered = doc
   for i = 1, #indices_filters do
-    logging_info("applying filter #" .. i)
+    log_info("applying filter #" .. i)
     local filter = indices_filters[i]
     filtered = filtered:walk(filter)
   end
@@ -502,19 +502,18 @@ setting the `ids_prefixes` variable, e.g. `-V ids_prefixes='{"names":"n_"}'.
 The value of `ids_prefixes` is a JSON object where keys are the index names
 and values are the corresponding prefixes.
 
+## Adding (subsets of indices) in the metadata of a document
+
+TODO: script `put_indices_in_metadata.lua`
+
 ## Version
 
-The current version is 0.5.0 (2025, February 7th).
+The current version is 0.5.1 (2025, February 10th).
 
 ## Changelog
 
+- Version 0.5.1: added filter to put indices in the metadata of a document;
+                 logging through `pandoc.log`.
+
 - Version 0.5.0: added support for multiple levels in general,
                  and for multiple levels/indices in ICML.
-
-## Aknowledgements
-
-This software
-
-- provides custom writers and filters for [Pandoc](https://pandoc.org);
-
-- and makes use of William Lupton's [logging.lua](https://github.com/pandoc-ext/logging) module.

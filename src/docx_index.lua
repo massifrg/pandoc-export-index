@@ -11,8 +11,8 @@
 ---@module 'pandoc-indices'
 
 local pandoc = pandoc ---@type pandoc
-local pandoc_List = pandoc.List
-local pandoc_RawInline = pandoc.RawInline
+local List = pandoc.List
+local RawInline = pandoc.RawInline
 
 ---Add paths to search for Lua code to be loaded with `require`.
 ---See [here](https://github.com/jgm/pandoc/discussions/9598).
@@ -34,9 +34,8 @@ addPathsToLuaPath({ pandoc.path.directory(PANDOC_SCRIPT_FILE) })
 local pandocIndices = require('pandoc-indices')
 local findIndexTerm = pandocIndices.findIndexTerm
 local textForXml = pandocIndices.textForXml
-local logging_error = pandocIndices.logging_error
-local logging_warning = pandocIndices.logging_warning
-local logging_info = pandocIndices.logging_info
+local log_warn = pandocIndices.log_warn
+local log_info = pandocIndices.log_info
 
 ---@type DocumentIndices
 local indices_data = {
@@ -94,7 +93,7 @@ local index_references_to_docx_rawinlines = {
         ---@diagnostic disable-next-line: need-check-nil
         local term = findIndexTerm(indices_data, idref, index.name)
         if term then
-          logging_info("reference to term " .. idref .. ": " .. term.text)
+          log_info("reference to term " .. idref .. ": " .. term.text)
           local term_text_as_xml = textForXml(term.text, {
             removeSoftHyphens = true,
             removeNewlines = true,
@@ -107,12 +106,12 @@ local index_references_to_docx_rawinlines = {
               .. '&quot;</w:instrText>'
               .. '<w:fldChar w:fldCharType="end"/>'
               .. '</w:r>'
-          local rawinline = pandoc_RawInline('openxml', text)
+          local rawinline = RawInline('openxml', text)
           if rawinline then
-            return pandoc_List({ span, rawinline }) ---@type List<Inline>
+            return List({ span, rawinline }) ---@type List<Inline>
           end
         else
-          logging_warning("Found a reference to an index term with id=\"" ..
+          log_warn("Found a reference to an index term with id=\"" ..
             idref .. "\", but I can't find the index term.")
         end
       end

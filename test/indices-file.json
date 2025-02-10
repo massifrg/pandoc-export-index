@@ -1,0 +1,57 @@
+{
+  "indices": [
+    {
+      "name": "subjects",
+      "prefix": "subjects",
+      "refClass": "index-ref",
+      "refWhere": "after"
+    }
+  ],
+  "terms": {
+    "subjects": [
+      {
+        "blocks": [
+          {
+            "c": [
+              {
+                "c": "Consequo",
+                "t": "Str"
+              }
+            ],
+            "t": "Para"
+          }
+        ],
+        "html": "<p>Consequo</p>",
+        "id": "consequo",
+        "level": 1,
+        "sortKey": "consequo",
+        "subs": {},
+        "text": "Consequo"
+      },
+      {
+        "blocks": [
+          {
+            "c": [
+              {
+                "c": [
+                  {
+                    "c": "Labor",
+                    "t": "Str"
+                  }
+                ],
+                "t": "Emph"
+              }
+            ],
+            "t": "Para"
+          }
+        ],
+        "html": "<p><em>Labor</em></p>",
+        "id": "labor",
+        "level": 1,
+        "sortKey": "labor",
+        "subs": {},
+        "text": "Labor"
+      }
+    ]
+  }
+}

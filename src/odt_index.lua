@@ -33,9 +33,8 @@ addPathsToLuaPath({ pandoc.path.directory(PANDOC_SCRIPT_FILE) })
 local pandocIndices = require('pandoc-indices')
 local findIndexTerm = pandocIndices.findIndexTerm
 local textForXml = pandocIndices.textForXml
-local logging_error = pandocIndices.logging_error
-local logging_warning = pandocIndices.logging_warning
-local logging_info = pandocIndices.logging_info
+local log_warn = pandocIndices.log_warn
+local log_info = pandocIndices.log_info
 
 ---@type DocumentIndices
 local indices_data = {
@@ -92,7 +91,7 @@ local index_references_to_odt_rawinlines = {
         ---@diagnostic disable-next-line: need-check-nil
         local term = findIndexTerm(indices_data, idref, index.name)
         if term then
-          logging_info("reference to term " .. idref .. ": " .. term.text)
+          log_info("reference to term " .. idref .. ": " .. term.text)
           local term_text_as_xml = textForXml(term.text, {
             removeSoftHyphens = true,
             removeNewlines = true,
@@ -105,7 +104,7 @@ local index_references_to_odt_rawinlines = {
           local rawinline = pandoc_RawInline('opendocument', text) ---@type RawInline
           return pandoc_List({ span, rawinline })
         else
-          logging_warning("Found a reference to an index term with id=\"" ..
+          log_warn("Found a reference to an index term with id=\"" ..
             idref .. "\", but I can't find the index term.")
         end
       end

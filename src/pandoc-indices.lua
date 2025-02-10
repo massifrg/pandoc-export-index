@@ -51,32 +51,8 @@ local pandoc_write = pandoc.write
 local utf8len = pandoc.text.len
 local utf8lower = pandoc.text.lower
 local utf8sub = pandoc.text.sub
-
--- beginning of functions for logging
----@module 'logging'
-
----Write a warning message to the standard error.
-local function logging_info(i)
-  io.stderr:write('(I) pandoc-indices: ' .. i .. '\n')
-end
----Write an informative message to the standard error.
-local function logging_warning(w)
-  io.stderr:write('(W) pandoc-indices: ' .. w .. '\n')
-end
----Write an error message to the standard error.
-local function logging_error(e)
-  io.stderr:write('(W) pandoc-indices: ' .. e .. '\n')
-end
-local logging
-if pcall(require, "logging") then
-  logging = require("logging")
-end
-if logging then
-  logging_info = logging.info
-  logging_warning = logging.warning
-  logging_error = logging.error
-end
--- end of functions for logging
+local log_info = pandoc.log.info
+local log_warn = pandoc.log.warn
 
 ---@alias IndexName string The name of an index.
 
@@ -188,7 +164,7 @@ end
 local function indexFromDiv(div, log)
   if isIndexDiv(div) then
     if log then
-      logging_info('Div has the "' .. INDEX_CLASS .. '" class, so I guess it\'s an index definition')
+      log_info('Div has the "' .. INDEX_CLASS .. '" class, so I guess it\'s an index definition')
     end
     local attrs = div.attributes
     local name = attrs[INDEX_NAME_ATTR] or INDEX_NAME_DEFAULT
@@ -199,7 +175,7 @@ local function indexFromDiv(div, log)
 
     local index = findIndexWithName(name)
     if index then
-      logging_warning('Index with name "' .. name .. '" already defined, ignoring the new definition.')
+      log_warn('Index with name "' .. name .. '" already defined, ignoring the new definition.')
     else
       index = {
         name = name,
@@ -393,7 +369,7 @@ local function createIndexTerm(index_name, id, level, sort_key, content)
       { wrap_text = "preserve" }
     ))
   end
-  -- logging_info('Text for sort key: "' .. sortKey .. '"')
+  -- log_info('Text for sort key: "' .. sortKey .. '"')
   local text = pandoc_write(content_without_subs, "plain", { wrap_text = "preserve" })
   local html = pandoc_write(content_without_subs, "html", { wrap_text = "preserve" })
   local l = level or 1
@@ -512,7 +488,7 @@ local collect_indices = {
   Div = function(div)
     local index = indexFromDiv(div, true)
     if index then
-      logging_info(
+      log_info(
         'Index "'
         .. index.name
         .. '", refs have class "'
@@ -559,9 +535,9 @@ return {
   isIndexRef = isIndexRef,
   isIndexTermDiv = isIndexTermDiv,
   textForXml = textForXml,
-  logging_error = logging_error,
-  logging_warning = logging_warning,
-  logging_info = logging_info,
+  log_error = log_warn,
+  log_warn = log_warn,
+  log_info = log_info,
   INDEX_CLASS = INDEX_CLASS,
   INDEX_NAME_ATTR = INDEX_NAME_ATTR,
   INDEX_NAME_DEFAULT = INDEX_NAME_DEFAULT,
