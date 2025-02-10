@@ -87,13 +87,14 @@ end
 ---@field prefix   string A prefix of the index.
 
 ---@class IndexTerm A term inside an Index.
----@field id      string  The term identifier.
----@field level   integer The term's level (1=head, 2=sub, 3=subsub, ...)
----@field sortKey string  The key to sort the term with.
----@field text    string  The content of the term as a string without styles.
----@field blocks  Block[] The content of the term as Pandoc Blocks.
----@field html?   string  The content of the term rendered as HTML.
----@field subs    IndexTerm[] The eventual sub-terms.
+---@field id        string  The term identifier.
+---@field level     integer The term's level (1=head, 2=sub, 3=subsub, ...)
+---@field sortKey   string  The key to sort the term with.
+---@field text      string  The content of the term as a string without styles.
+---@field blocks    Block[] The content of the term as Pandoc Blocks.
+---@field html?     string  The content of the term rendered as HTML.
+---@field markdown? string  The content of the term rendered as markdown.
+---@field subs      IndexTerm[] The eventual sub-terms.
 
 ---@class IndexRef A reference to an `IndexTerm` in the text.
 ---@field indexName string The name of the index.
