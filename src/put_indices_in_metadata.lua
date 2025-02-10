@@ -8,7 +8,34 @@
 --]]
 
 --[[
-
+This is how the `indices` variable or the indices' file should look like:
+{
+  "indices": [
+    {
+      "name": "subjects",
+      "prefix": "subjects",
+      "refClass": "index-ref",
+      "refWhere": "after"
+    }
+  ],
+  "terms": {
+    "subjects": [
+      {
+        "id": "labor",                   // id is mandatory
+        "sortKey": "labor",              // sortKey is optional
+                                         // contents can be specified in many ways:
+        "blocks": ...                    // 1. Pandoc's JSON format
+        "html": "<p><em>Labor</em></p>", // 2. HTML format, considered if there's no "blocks" field
+        "markdown": "*Labor*",           // 3. markdown, considered if there are no "blocks" nor "html" fields.
+        "text": "Labor"                  // 4. plain text, considered when none of "blocks", "html", "markdown" is specified.
+      },
+      subs: [
+        ...                              // sub terms
+      ]
+      ...
+    ]
+  }
+}
 --]]
 
 local INDICES_VAR_NAME = "indices"

@@ -502,9 +502,120 @@ setting the `ids_prefixes` variable, e.g. `-V ids_prefixes='{"names":"n_"}'.
 The value of `ids_prefixes` is a JSON object where keys are the index names
 and values are the corresponding prefixes.
 
-## Adding (subsets of indices) in the metadata of a document
+## Adding (subsets of) indices in the metadata of a document
 
-TODO: script `put_indices_in_metadata.lua`
+The script `put_indices_in_metadata.lua` is useful in one particular case,
+when you have:
+
+- a collection of documents (e.g. articles) 
+
+- a database that links the terms of an index to the documents (the terms ids to the docs ids)
+
+- and you want to make a publication (e.g. a book) with an index that shows the numbers of the
+  pages where each term occurs
+
+The links are between the terms and the documents, but not to the point(s) where they are
+referred in the documents.
+You may put the references at the top of each document, but the page numbers in the index
+would always refer to the first page of the document in the publication.
+Unless every document is exactly one page long, you may have a term referred in one of the
+following pages, but it would appear in the index as if it was referred in the first page.
+
+So you must put the references to the terms inside the text of the document.
+[pundok-editor](https://github.com/massifrg/pundok-editor) will have an interface
+that helps you with that task, if the subset of the index terms that are referred
+in a document are added to its metadata.
+
+That's the task of the `put_indices_in_metadata.lua` filter:
+
+```sh
+pandoc -s -V indices=... -L put_indices_in_metadata.lua -o doc_with_index_in_metadata doc
+```
+
+The `-s` option is needed because otherwise you would not get metadata in the output.
+
+The `indices` variable is a JSON representation of the indices, that is the same coming out
+of the `indices2json.lua` script.
+
+Writing a JSON-formatted index on the command line is challenging, so it's better writing it
+to a JSON file and setting the `indices-file` variable to point to it:
+
+```sh
+pandoc -s -V indices-file=indices.json -L put_indices_in_metadata.lua -o doc_with_index_in_metadata doc
+```
+
+In its minimal form, the indices' JSON is something like this:
+
+```json
+{
+  "indices": [
+    {
+      "name": "subjects",
+      "prefix": "subjects",
+      "refClass": "index-ref",
+      "refWhere": "after"
+    }
+  ],
+  "terms": {
+    "subjects": [
+      {
+        "id": "labor",
+        "text": "Labor",
+      },
+      ...
+    ]
+  }
+}
+```
+
+The terms' contents are in the `text` field, but you may specify them with
+the `blocks` (Pandoc's JSON format), `html` (HTML), `markdown` (Markdown) fields.
+
+You may have more than one of those fields in a term, but the filter will consider
+only one, with this precedence rule: the filter looks for the `blocks` field;
+if it does not find it, it looks for the `html`, then the `markdown`,
+and finally the `text` field.
+
+```json
+{
+  "indices": [
+    {
+      "name": "subjects",
+      "prefix": "subjects",
+      "refClass": "index-ref",
+      "refWhere": "after"
+    }
+  ],
+  "terms": {
+    "subjects": [
+      {
+        "blocks": [
+          {
+            "c": [
+              {
+                "c": [
+                  {
+                    "c": "Labor",
+                    "t": "Str"
+                  }
+                ],
+                "t": "Emph"
+              }
+            ],
+            "t": "Para"
+          }
+        ],
+        "id": "labor",
+        "sortKey": "labor",
+        "html": "<p><em>Labor</em></p>",
+        "markdown": "*Labor*",
+        "text": "Labor\n"
+      },
+      ...
+    ]
+  }
+}
+```
 
 ## Version
 
