@@ -170,7 +170,7 @@ and you'll get something like this:
           }
         ],
         "id": "consequo",
-        "sortKey": "consequo",
+        "sort-key": "consequo",
         "text": "Consequo\n"
       },
       {
@@ -191,7 +191,7 @@ and you'll get something like this:
           }
         ],
         "id": "labor",
-        "sortKey": "labor",
+        "sort-key": "labor",
         "text": "Labor\n"
       }
     ]
@@ -486,6 +486,15 @@ The filter `sort_indices.lua` sorts all terms in every index of a document.
 Currently the terms are sorted accordingly to their sort-key attribute,
 in ascending alphabetical order.
 
+## Computing sort keys from the texts of the index terms
+
+There two filters to compute the `sort-key` attribute of index terms:
+
+- `recompute_sort_keys.lua` recomputes the sort-key attribute of every index term;
+
+- `recompute_missing_sort_keys.lua` recomputes the sort-key attribute
+                 only of index terms that have no such attribute.
+
 ## Automatically assign identifiers to index terms
 
 The filter `assign_ids_to_index_terms.lua` assigns an identifier to any index term
@@ -606,7 +615,7 @@ and finally the `text` field.
           }
         ],
         "id": "labor",
-        "sortKey": "labor",
+        "sort-key": "labor",
         "html": "<p><em>Labor</em></p>",
         "markdown": "*Labor*",
         "text": "Labor\n"
@@ -619,9 +628,16 @@ and finally the `text` field.
 
 ## Version
 
-The current version is 0.5.1 (2025, February 10th).
+The current version is 0.6 (2025, May 13th).
 
 ## Changelog
+
+- Version 0.6.0: added filters to recompute sort-key attributes
+                 from the text of the terms;
+                 `recompute_sort_keys.lua` recomputes the sort-key attribute
+                 of every index term;
+                 `recompute_missing_sort_keys.lua` recomputes the sort-key attribute
+                 only of index terms that have no such attribute.
 
 - Version 0.5.1: added filter to put indices in the metadata of a document;
                  logging through `pandoc.log`.
