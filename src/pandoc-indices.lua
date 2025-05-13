@@ -307,7 +307,7 @@ end
 ---Computes a sort key from a UTF8 text.
 ---The sort key will contain only unaccented latin letters, numbers and NON_LETTER_CHAR chars;
 ---NON_LETTER_CHAR can't be at the beginning or at the end of the sort key;
----there can't be no consecutive NON_LETTER_CHARs.
+---there can't be two consecutive NON_LETTER_CHARs.
 ---@param text string A UTF8 text.
 ---@return string
 local function computeSortKey(text)
@@ -527,6 +527,7 @@ end
 
 return {
   collectIndices = collectIndices,
+  computeSortKey = computeSortKey,
   expungeIndexTerms = expungeIndexTerms,
   findIndexWith = findIndexWith,
   findIndexTerm = findIndexTerm,
