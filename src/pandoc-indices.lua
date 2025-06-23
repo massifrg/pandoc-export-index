@@ -80,6 +80,9 @@ local log_warn = pandoc.log.warn
 ---@field indices Index[]
 ---@field terms   table<IndexName,IndexTerm[]>
 
+---@class TermPath
+---@field path integer[] An array of the array indexes of the path of a term: head, sub1, sub2, etc.
+
 ---@type Index[] An array of indices defined in a document.
 local indices = {}
 ---@type string The current index during parsing.
@@ -562,6 +565,30 @@ local function indexAsIndexTerm(index, index_terms, sortKey)
   end
   index_as_term.subs = index_terms
   return index_as_term
+end
+
+---comment
+---@param index_terms IndexTerm[]
+---@param base_path? string
+---@param acc? table<string,string> 
+---@return table<string,string>
+local function computeTermPaths(index_terms, base_path, acc)
+  ---@type table<string,string>
+  local id2path = acc or {}
+  local sep = (base_path == "" or not base_path) and "" or ","
+  for i = 1, #index_terms do
+    local term = index_terms[i]
+    local id = term.id
+    if id then
+      local path = base_path .. sep .. tostring(i)
+      id2path[id] = path
+      local subs = term.subs
+      if subs then
+        computeTermPaths(subs, path, id2path)
+      end
+    end
+  end
+  return id2path
 end
 
 return {
