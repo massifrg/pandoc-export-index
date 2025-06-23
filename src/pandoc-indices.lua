@@ -413,6 +413,7 @@ end
 ---@field maxLength? integer Truncate the text to this length when it exceeds it.
 ---@field removeNewlines? boolean Remove newlines.
 ---@field removeSoftHyphens boolean Remove soft hyphen chars.
+---@field replaceColons? string Replace colons ":" (in DOCX colons are used for sub terms) with a string (suggestion: full-width colon "：", U+FF1A)
 
 ---Transform the text to go into XML.
 ---@param text string The text to transform.
@@ -431,6 +432,14 @@ local function textForXml(text, options)
   -- replace soft hyphens
   if options.removeSoftHyphens then
     forxml = string_gsub(forxml, '\xC2\xAD', "")
+  end
+  -- replace colons if necessary
+  local replaceColons = options.replaceColons
+  if replaceColons then
+    if replaceColons == '' or replaceColons == ':' then
+      replaceColons = "："
+    end
+    forxml = string_gsub(forxml, ':', replaceColons)
   end
   -- trim the text
   if options.maxLength then
@@ -526,7 +535,7 @@ local function increaseLevel(index_terms)
   local term
   for i = 1, #index_terms do
     term = index_terms[i]
-    term.level = term.level +1
+    term.level = term.level + 1
     local subs = term.subs
     if subs and #subs > 0 then
       increaseLevel(subs)
