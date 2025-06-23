@@ -68,6 +68,7 @@ local just_one_index = true
 local _isIndexRef = pandocIndices.isIndexRef
 local hasClass = pandocIndices.hasClass
 local textForXml = pandocIndices.textForXml
+local indexAsIndexTerm = pandocIndices.indexAsIndexTerm
 local INDEX_NAME_DEFAULT = pandocIndices.INDEX_NAME_DEFAULT
 local INDEX_REF_BEFORE = pandocIndices.INDEX_REF_BEFORE
 local INDEX_TERM_CLASS = pandocIndices.INDEX_TERM_CLASS
@@ -210,22 +211,6 @@ local insert_index_references = {
   end
 }
 
----Generate a pseudo-IcmlIndexTerm for an Index that is used as the first level of a multiple index.
----@param index Index
----@param sortKey? string An optional sort key to order indices.
----@return IcmlIndexTerm
-local function indexAsIndexTerm(index, sortKey)
-  return {
-    id      = index.name,
-    level   = 1,
-    sortKey = sortKey or index.name,
-    text    = index.name,
-    blocks  = pandoc.Header(1, { pandoc.Str(index.name) }),
-    html    = '<h1>' .. index.name .. '</h1>',
-    subs    = terms[index.name] or {}
-  }
-end
-
 local LEVEL_INDENTATION = { "", "  ", "    ", "      " }
 
 ---Appends the topics' XML lines of the terms of an index.
@@ -265,7 +250,8 @@ local set_index_variable = {
       level1terms = terms[indices[1].name]
     else
       for i = 1, #indices do
-        table_insert(level1terms, indexAsIndexTerm(indices[i], tostring(i)))
+        local index = indices[i]
+        table_insert(level1terms, indexAsIndexTerm(index, terms[index.name], tostring(i)))
       end
     end
     table_insert(index_lines, '<Index Self="' .. prefix .. '">')

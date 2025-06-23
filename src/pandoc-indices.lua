@@ -347,6 +347,7 @@ local expungeIndexTerms = {
 ---@param level      integer     The term level.
 ---@param sort_key   string|nil  The string to use to sort terms.
 ---@param content    Block[]|nil The content of the term.
+---@return IndexTerm
 local function createIndexTerm(index_name, id, level, sort_key, content)
   local index_terms = terms[index_name]
   if not index_terms then
@@ -519,12 +520,48 @@ local function collectIndices(doc)
   }
 end
 
+---Recursively increase the level of the terms of an index.
+---@param index_terms IndexTerm[]
+local function increaseLevel(index_terms)
+  local term
+  for i = 1, #index_terms do
+    term = index_terms[i]
+    term.level = term.level +1
+    local subs = term.subs
+    if subs and #subs > 0 then
+      increaseLevel(subs)
+    end
+  end
+end
+
+---Generate a pseudo-IndexTerm for an Index that is used as the first level of a multiple index.
+---@param index Index
+---@param index_terms IndexTerm[]
+---@param sortKey? string An optional sort key to order indices.
+---@return IndexTerm
+local function indexAsIndexTerm(index, index_terms, sortKey)
+  local index_as_term = {
+    id      = index.name,
+    level   = 1,
+    sortKey = sortKey or index.name,
+    text    = index.name,
+    blocks  = pandoc.Header(1, { pandoc.Str(index.name) }),
+    html    = '<h1>' .. index.name .. '</h1>',
+  }
+  if index_terms and #index_terms > 0 then
+    increaseLevel(index_terms)
+  end
+  index_as_term.subs = index_terms
+  return index_as_term
+end
+
 return {
   collectIndices = collectIndices,
   computeSortKey = computeSortKey,
   expungeIndexTerms = expungeIndexTerms,
   findIndexWith = findIndexWith,
   findIndexTerm = findIndexTerm,
+  indexAsIndexTerm = indexAsIndexTerm,
   hasClass = hasClass,
   isIndexDiv = isIndexDiv,
   isIndexRef = isIndexRef,
