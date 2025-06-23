@@ -89,18 +89,12 @@ local terms = {}
 
 ---Check whether a Pandoc item with an Attr has a class.
 ---@param elem WithAttr The Block or Inline with an Attr.
----@param class string      The class to look for among the ones in Attr's classes.
+---@param class string  The class to look for among the ones in Attr's classes.
 ---@return boolean
 local function hasClass(elem, class)
-  if elem and elem.attr and elem.attr.classes then
-    local classes = elem.attr.classes
-    for i = 1, #classes do
-      if classes[i] == class then
-        return true
-      end
-    end
-  end
-  return false
+  ---@type List<string>
+  local classes = elem.classes or List()
+  return classes:includes(class)
 end
 
 ---Search for an Index that satisfies a predicate.
@@ -205,7 +199,7 @@ local function indexTermFromDiv(div)
     -- remove sub-terms from content
     local content = List()
     local div_content = div.content
-    for i =1, #div_content do
+    for i = 1, #div_content do
       local block = div_content[i]
       if not isIndexTermDiv(block) then
         content:insert(block)

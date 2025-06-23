@@ -10,13 +10,31 @@ You can look for updates of this file at:
 https://raw.githubusercontent.com/massifrg/pandoc-luals-annotations/main/src/pandoc-types-annotations.lua
 ]] --
 
+---@alias Predicate<T> fun(t: T): boolean
+---@alias MapFunction<T,U> fun(t: T): U
+---@alias Comparator<T> fun(a: T, b: T): boolean
+
 ---@class List<T>: {[integer]: T} A Pandoc List.
+---@field at fun(self: List<`T`>, index: integer, default?: `T`): `T`
+---@field clone fun(self: List<`T`>): List<`T`>
+---@field extend fun(self: List<`T`>, list: List<`T`>)
+---@field find fun(self: List<`T`>, needle: `T`, init?: integer): `T`|nil,integer|nil
+---@field find_if fun(self: List<`T`>, predicate: Predicate<`T`>, init?: integer): `T`|nil,integer|nil
+---@field filter fun(self: List<`T`>, predicate: Predicate<`T`>): List<`T`>
+---@field includes fun(self: List<`T`>, needle: `T`, init?: integer): boolean
+---@field insert fun(self: List<`T`>, pos: integer, value: `T`)
+---@field insert fun(self: List<`T`>, value: `T`)
+---@field iter fun(self: List<`T`>, step?: integer): IteratorFunction
+---@field map fun(self: List<`T`>, f: MapFunction<`T`,`U`>): List<`U`>
+---@field new fun(self: List<`T`>, t?: table<`T`>):List<`T`>
+---@field remove fun(self: List<`T`>, pos?: integer)
+---@field sort fun(self: List<`T`>, comparator: Comparator<`T`>)
 
 ---@class EmptyList An empty List.
 
 ---@class Attr A Pandoc `Attr` data structure.
 ---@field identifier string
----@field classes    string[]
+---@field classes    List<string>
 ---@field attributes table<string,string>
 
 ---@class WithTag
@@ -40,8 +58,11 @@ https://raw.githubusercontent.com/massifrg/pandoc-luals-annotations/main/src/pan
 ---@class Inlines: List<Inlines>
 ---@field walk fun(self: Inlines, filter: Filter)
 
+---@alias BlockWithAttr Header|Div|Figure|Table|CodeBlock
+---@alias InlineWithAttr Span|Code|Link|Image
+
 ---@class Plain: Block A Pandoc `Plain`.
----@field content Blocks
+---@field content Inlines
 
 ---@class Para: Block A Pandoc `Para`.
 ---@field content Inlines
@@ -665,9 +686,10 @@ https://raw.githubusercontent.com/massifrg/pandoc-luals-annotations/main/src/pan
 
 ---Handle pandoc templates.
 ---@class PandocTemplateModule
----@field apply fun(template: Template, context: table): Pandoc Applies a context with variable assignments to a template, returning the rendered template. The context parameter must be a table with variable names as keys and `Doc`, `string`, `boolean`, or `table` as values, where the table can be either be a list of the aforementioned types, or a nested context.
+---@field apply fun(template: Template, context: table): Doc Applies a context with variable assignments to a template, returning the rendered template. The context parameter must be a table with variable names as keys and `Doc`, `string`, `boolean`, or `table` as values, where the table can be either be a list of the aforementioned types, or a nested context.
 ---@field compile fun(template: string, templates_path?: string[]): Template Compiles a template string into a Template object usable by pandoc. If the `templates_path` parameter is specified, should be the file path associated with the template. It is used when checking for partials. Partials will be taken only from the default data files if this parameter is omitted.
----@field default fun(writer?: string): Template Returns the default template for a given writer as a string. An error if no such template can be found. `writer` defaults to the global `FORMAT`.
+---@field default fun(writer?: string): string Returns the default template for a given writer as a string. An error if no such template can be found. `writer` defaults to the global `FORMAT`.
+---@field get fun(filename: string): string Retrieve text for a template. This function first checks the resource paths for a file of this name; if none is found, the templates directory in the user data directory is checked. Returns the content of the file, or throws an error if no file is found.
 ---@field meta_to_context fun(meta: Meta, blocks_writer: BlocksWriter, inlines_writer: InlinesWriter) Creates template context from the document’s Meta data, using the given functions to convert `Blocks` and `Inlines` to `Doc` values.
 
 ---Constructors for types which are not part of the pandoc AST.
