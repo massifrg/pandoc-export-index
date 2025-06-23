@@ -97,6 +97,18 @@ local index_references_to_odt_rawinlines = {
             removeNewlines = true,
             -- maxLength = 100
           })
+          --[[
+EXAMPLE ENCODING of the "Large Language Models" sub term of the head term "Artificial Intelligence".
+<text:alphabetical-index-mark
+  text:string-value="Large Language Models"
+  text:key1="Artificial Intelligence"
+  text:key2="Large Language Models" />
+ALTERNATIVE ENCODING:
+<text:alphabetical-index-mark text:string-value="Large Language Models">
+  <text:primary-key>Artificial Intelligence</text:primary-key>
+  <text:secondary-key>Large Language Models</text:secondary-key>
+</text:alphabetical-index-mark>
+]]
           local text = '<text:alphabetical-index-mark'
               .. ' text:string-value="' .. "" .. '"'
               .. ' text:key1="' .. term_text_as_xml .. '"'
