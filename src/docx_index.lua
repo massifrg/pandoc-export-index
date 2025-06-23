@@ -97,8 +97,17 @@ local index_references_to_docx_rawinlines = {
           local term_text_as_xml = textForXml(term.text, {
             removeSoftHyphens = true,
             removeNewlines = true,
+            replaceColons = "：",
             -- maxLength = 100
           })
+          --[[
+EXAMPLE ENCODING of the "Large Language Models" sub term of the head term "Artificial Intelligence".
+<w:fldSimple w:instr="XE &quot;Artificial Intelligence:Large Language Models&quot;">
+  <w:r>
+    <w:t>Large Language Models</w:t>
+  </w:r>
+</w:fldSimple>
+]]
           local text = '<w:r>'
               .. '<w:fldChar w:fldCharType="begin"/>'
               .. '<w:instrText xml:space="preserve">XE &quot;'
@@ -108,7 +117,8 @@ local index_references_to_docx_rawinlines = {
               .. '</w:r>'
           local rawinline = RawInline('openxml', text)
           if rawinline then
-            return List({ span, rawinline }) ---@type List<Inline>
+            local inlines = { span, rawinline }
+            return List(inlines)
           end
         else
           log_warn("Found a reference to an index term with id=\"" ..
