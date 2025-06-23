@@ -217,7 +217,7 @@ local insert_index_references = {
 local function indexAsIndexTerm(index, sortKey)
   return {
     id      = index.name,
-    leve    = 1,
+    level   = 1,
     sortKey = sortKey or index.name,
     text    = index.name,
     blocks  = pandoc.Header(1, { pandoc.Str(index.name) }),
