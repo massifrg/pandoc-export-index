@@ -37,6 +37,7 @@ local INDEX_TERM_CLASS = "index-term"
 local INDEX_SORT_KEY_ATTR = "sort-key"
 
 local string_find = string.find
+local string_gmatch = string.gmatch
 local string_gsub = string.gsub
 local string_len = string.len
 local string_sub = string.sub
@@ -58,8 +59,8 @@ local log_warn = pandoc.log.warn
 
 ---@class Index    An index in a document.
 ---@field name     string The name of the index, e.g. "index", "names", etc.
----@field refClass string The .
----@field refWhere IndexRefWhere Where the reference is put.
+---@field refClass string The class that references to the terms of this index have.
+---@field refWhere IndexRefWhere Where the reference is put, around the word it's referencing.
 ---@field prefix   string A prefix of the index.
 
 ---@class IndexTerm A term inside an Index.
@@ -569,13 +570,14 @@ end
 
 ---comment
 ---@param index_terms IndexTerm[]
----@param base_path? string
----@param acc? table<string,string> 
+---@param _base_path? string
+---@param acc? table<string,string>
 ---@return table<string,string>
-local function computeTermPaths(index_terms, base_path, acc)
+local function computeTermPaths(index_terms, _base_path, acc)
   ---@type table<string,string>
   local id2path = acc or {}
-  local sep = (base_path == "" or not base_path) and "" or ","
+  local base_path = _base_path or ""
+  local sep = base_path == "" and "" or ","
   for i = 1, #index_terms do
     local term = index_terms[i]
     local id = term.id
@@ -591,6 +593,90 @@ local function computeTermPaths(index_terms, base_path, acc)
   return id2path
 end
 
+---Convert a string path into an array of integers.
+---@param path string
+---@return table<integer>
+local function stringPathToIntegers(path)
+  local intpath = {}
+  for num in string_gmatch(path, "[^,]+") do
+    table_insert(intpath, tonumber(num))
+  end
+  return intpath
+end
+
+---Return an array of IndexTerm of a term of arbitrary depth,
+---e.g. the path of a subsub term is `{ head_term, sub_term, subsub_term }`.
+---@param index_terms IndexTerm[] The index terms of an index.
+---@param id2path table<string,string>
+---@param id string The id of an index term, at any depth.
+---@return IndexTerm[]|nil
+local function getIndexTermsPath(index_terms, id2path, id)
+  local trms = {} ---@type IndexTerm[]
+  local path = id2path[id]
+  if path then
+    local indexes = stringPathToIntegers(path)
+    local subs = index_terms
+    local term
+    for i = 1, #indexes do
+      if not subs then return end
+      term = subs[indexes[i]]
+      if not term then return end
+      table_insert(trms, term)
+      subs = term.subs
+    end
+  end
+  return trms
+end
+
+---Return an array of strings of the text fields of a term of arbitrary depth,
+---e.g. the path of a subsub term is `{ head_text, sub_text, subsub_text }`.
+---@param index_terms IndexTerm[] The index terms of an index.
+---@param id2path table<string,string>
+---@param id string The id of an index term, at any depth.
+---@return string[]|nil
+local function getTermTextsPath(index_terms, id2path, id)
+  local trms = getIndexTermsPath(index_terms, id2path, id)
+  if trms then
+    local texts = {} ---@type string[]
+    for i = 1, #trms do
+      table_insert(texts, trms[i].text)
+    end
+    return texts
+  end
+end
+
+---Creates a single index out of the many indices of a document.
+---If there's only one index it returns that, otherwise creates an index
+---where the first level (head terms) are the name of the indices.
+---@param doc_indices DocumentIndices The indices read in a document.
+---@param name? string The name of the single index.
+---@return DocumentIndices|nil
+local function indexOfIndices(doc_indices, name)
+  local ndcs = doc_indices.indices
+  if #ndcs == 1 then
+    return doc_indices
+  elseif #ndcs > 1 then
+    local trms = {} ---@type IndexTerm[]
+    for i = 1, #ndcs do
+      local index = ndcs[i]
+      local index_as_term = indexAsIndexTerm(index, doc_indices.terms[index.name], index.name)
+      table_insert(trms, index_as_term)
+    end
+    local index_name = name or INDEX_NAME_DEFAULT
+    ---@type Index
+    local single_index = {
+      name = index_name,
+      prefix = "", -- TODO: default index prefix constant?
+      refClass = INDEX_REF_CLASS_DEFAULT,
+      refWhere = INDEX_REF_WHERE_DEFAULT
+    }
+    return {
+      indices = { single_index },
+      terms = { [index_name] = trms }
+    }
+  end
+end
+
 return {
   collectIndices = collectIndices,
   computeSortKey = computeSortKey,
@@ -598,6 +684,10 @@ return {
   findIndexWith = findIndexWith,
   findIndexTerm = findIndexTerm,
   indexAsIndexTerm = indexAsIndexTerm,
+  indexOfIndices = indexOfIndices,
+  computeTermPaths = computeTermPaths,
+  getIndexTermsPath = getIndexTermsPath,
+  getTermTextsPath = getTermTextsPath,
   hasClass = hasClass,
   isIndexDiv = isIndexDiv,
   isIndexRef = isIndexRef,

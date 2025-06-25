@@ -5,21 +5,31 @@ This software is a collection of [Pandoc](https://pandoc.org)
 and [custom writers](https://pandoc.org/custom-writers.html)
 to export a document with indices in these formats:
 
-- ICML: sub-terms and multiple indices (using the first level) are supported
+- ICML: sub-terms and multiple indices (using the first level) are supported;
+        the maximum depth is 4 when there's only one index, and 3 when you have
+        more than one index
 
-- docx (no support for sub-terms yet)
+- docx: sub-terms and multiple indices (using the first level) are supported
 
-- odt (no support for sub-terms yet)
+- odt: sub-terms and multiple indices (using the first level) are supported
 
 - ~~ConTeXt~~
 
 - ~~LaTeX~~
 
-Version 0.5.0 introduces support for multiple levels (index terms can have sub-terms).
+Version 0.5.0 introduced support for multiple levels (index terms can have sub-terms).
 
-Sub-terms are detected in the common utils of `pandoc-indices.lua`, and they are used
-by `icml_with_index.lua`, but **I have still to adapt all the other scripts to the new
-feature, so they may not work with indices with sub-terms yet**.
+In version 0.6.0, the filters for ODT (`odt_index.lua`) and DOCX (`docx_index.lua`)
+support multiple indices and multiple levels.
+
+In ICML, DOCX and ODT, multiple indices are supported sacrificing the first level,
+because those formats don't provide support for multiple analytical indices (indices
+with sub terms, subsub terms, etc.).
+So the head terms are the names of the indices.
+Once you generated the multiple index, you can edit it to make it appear as if there were
+more indices.
+
+I don't know the maximum depth of index terms in DOCX and ODT.
 
 This software is a side-project of [pundok-editor](https://github.com/massifrg/pundok-editor),
 but you can use it without it, just following the same conventions (see below).
@@ -277,8 +287,7 @@ You must create it explicitly with your word processing app.
 In LibreOffice, you can click on
 __Insert - Table of Contents and Index - Table of Contents, Index or Bibliography__.
 
-Though LibreOffice supports many indices, for now the only one that is created is
-the alphabetical index.
+and choose the alphabetical index.
 
 ## Generating an index
 
@@ -628,9 +637,12 @@ and finally the `text` field.
 
 ## Version
 
-The current version is 0.6 (2025, May 13th).
+The current version is 0.7.0 (2025, June 25th).
 
 ## Changelog
+
+- Version 0.7.0: support for index sub terms of any depth;
+                 ODT and DOCX filters support multiple indices and sub-terms.
 
 - Version 0.6.0: added filters to recompute sort-key attributes
                  from the text of the terms;
