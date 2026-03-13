@@ -37,6 +37,8 @@ local ICML_TOPICN = "Topicn"
 local MAX_ICML_TERM_TEXT_LENGTH = nil
 
 local pandoc = pandoc
+local List = pandoc.List
+local RawInline = pandoc.RawInline
 local string_find = string.find
 local string_sub = string.sub
 local table_insert = table.insert
@@ -153,9 +155,11 @@ local function getIcmlReference(idref, index_name, index_prefix)
         .. id_attr
         .. ' />\n'
         .. '</CharacterStyleRange>\n'
-    return pandoc.List({ pandoc.RawInline('icml', text) })
+    return List({ RawInline('icml', text) })
+  else
+    log_warn("Index term with id=" .. idref .. " not found")
   end
-  return pandoc.List({})
+  return List()
 end
 
 ---Create an index topic for ICML.
@@ -191,17 +195,18 @@ local insert_index_references = {
       local idref = span.attributes.idref
       if idref then
         log_info('Found reference for index "' .. index.name .. '", term with idref=' .. idref)
-        local inlines = pandoc.List({})
+        local inlines = List()
         local ref = getIcmlReference(idref, index.name, index.prefix)
         if ref then
+          log_info(pandoc.utils.stringify(ref))
           if index.refWhere == INDEX_REF_BEFORE then
-            inlines:extend(ref)
-            inlines:extend(span.content)
+            inlines = inlines:extend(ref):extend(span.content)
           else
-            inlines:extend(span.content)
-            inlines:extend(ref)
+            inlines = inlines:extend(span.content):extend(ref)
           end
           return inlines
+        else
+          log_info('ICML reference for index "' .. index.name .. '", term with idref=' .. idref .. " NOT CREATED")
         end
       else
         ---@diagnostic disable-next-line: need-check-nil
@@ -263,7 +268,11 @@ local set_index_variable = {
 }
 
 ---Pandoc filters to be applied to the document, to produce an ICML with an index.
-local indices_filters = { set_index_variable, insert_index_references, pandocIndices.expungeIndexTerms }
+local indices_filters = {
+  set_index_variable,
+  insert_index_references,
+  pandocIndices.expungeIndexTerms
+}
 
 ---Pandoc writer to produce an ICML document with an index.
 function Writer(doc, opts)
@@ -278,16 +287,20 @@ function Writer(doc, opts)
   end
   -- make a clone of opts and add the index variable
   local options = pandoc.WriterOptions(opts)
-  options.variables.index = index_var
+  options.variables.icmlIndex = index_var
   return pandoc.write(filtered, 'icml', options)
 end
 
----Template that inserts the `<Index>` element just before the main `<Story>` in ICML.
+---Template that inserts the `<Index>` element just before the main `<Story>` in ICML,
+---if $icmlIndex$ variable does not appear in the template.
 function Template()
   local t = pandoc.template.default 'icml'
-  local story_start = string_find(t, '  <Story Self="pandoc_story"')
-  if story_start then
-    t = string_sub(t, 1, story_start - 1) .. '$index$\n  ' .. string_sub(t, story_start)
+  local icmlIndex_start = string_find(t, '$icmlIndex$')
+  if not icmlIndex_start then
+    local story_start = string_find(t, '  <Story Self="pandoc_story"')
+    if story_start then
+      t = string_sub(t, 1, story_start - 1) .. '$icmlIndex$\n  ' .. string_sub(t, story_start)
+    end
   end
   return t
 end
