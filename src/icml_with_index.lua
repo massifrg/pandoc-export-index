@@ -68,7 +68,6 @@ local terms = {}
 local just_one_index = true
 
 local _isIndexRef = pandocIndices.isIndexRef
-local hasClass = pandocIndices.hasClass
 local textForXml = pandocIndices.textForXml
 local indexAsIndexTerm = pandocIndices.indexAsIndexTerm
 local INDEX_NAME_DEFAULT = pandocIndices.INDEX_NAME_DEFAULT

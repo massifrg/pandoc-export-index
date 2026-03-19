@@ -95,16 +95,6 @@ local current_index_name
 ---@type table<IndexName,IndexTerm[]> An associative array index name => index terms.
 local terms = {}
 
----Check whether a Pandoc item with an Attr has a class.
----@param elem WithAttr The Block or Inline with an Attr.
----@param class string  The class to look for among the ones in Attr's classes.
----@return boolean
-local function hasClass(elem, class)
-  ---@type List<string>
-  local classes = elem.classes or List()
-  return classes:includes(class)
-end
-
 ---Search for an Index that satisfies a predicate.
 ---@param indexes   Index[] An array of indices.
 ---@param predicate fun(index: Index): boolean
@@ -136,7 +126,7 @@ local function isIndexRef(indexes, span)
   local index = findIndexWith(
     indexes,
     function(i)
-      return hasClass(span, i.refClass)
+      return span.classes:includes(i.refClass)
     end
   )
   if index then
@@ -149,14 +139,14 @@ end
 ---@param div Div A Pandoc Div.
 ---@return boolean
 local function isIndexDiv(div)
-  return hasClass(div, INDEX_CLASS)
+  return div.classes:includes(INDEX_CLASS)
 end
 
 ---Checks whether a `Div` is meant to define an index term.
 ---@param div Div A Pandoc Div.
 ---@return boolean
 local function isIndexTermDiv(div)
-  return hasClass(div, INDEX_TERM_CLASS)
+  return div.classes:includes(INDEX_TERM_CLASS)
 end
 
 ---Get an index object corresponding to the `Div`, if it's an index `Div`.
@@ -199,7 +189,7 @@ end
 ---@return string|nil    # the sort key of the term.
 ---@return Block[]|nil   # the content `Block`s of the `Div`.
 local function indexTermFromDiv(div)
-  if hasClass(div, INDEX_TERM_CLASS) then
+  if div.classes:includes(INDEX_TERM_CLASS) then
     local attrs = div.attributes
     local id = div.identifier
     local index_name = attrs[INDEX_NAME_ATTR] or current_index_name
@@ -343,7 +333,7 @@ end
 ---@type Filter
 local expungeIndexTerms = {
   Div = function(div)
-    if hasClass(div, INDEX_TERM_CLASS) then
+    if div.classes:includes(INDEX_TERM_CLASS) then
       return List({})
     end
   end
@@ -692,7 +682,6 @@ return {
   computeTermPaths = computeTermPaths,
   getIndexTermsPath = getIndexTermsPath,
   getTermTextsPath = getTermTextsPath,
-  hasClass = hasClass,
   isIndexDiv = isIndexDiv,
   isIndexRef = isIndexRef,
   isIndexTermDiv = isIndexTermDiv,
