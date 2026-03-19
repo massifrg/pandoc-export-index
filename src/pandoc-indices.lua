@@ -33,6 +33,10 @@ local INDEX_REF_WHERE_DEFAULT = INDEX_REF_AFTER
 local INDEX_REF_TEXT_ATTR = "indexed-text"
 ---The class characterizing an index term.
 local INDEX_TERM_CLASS = "index-term"
+---The class of a non-preferred index term, that usually references to the preferred one.
+local INDEX_SEE_TERM_CLASS = "see-term"
+---The class to characterize elements that reference related terms.
+local INDEX_SEE_ALSO_CLASS = "see-also"
 ---The attribute used as sort-key in the index.
 local INDEX_SORT_KEY_ATTR = "sort-key"
 
@@ -707,5 +711,7 @@ return {
   INDEX_REF_WHERE_DEFAULT = INDEX_REF_WHERE_DEFAULT,
   INDEX_REF_TEXT_ATTR = INDEX_REF_TEXT_ATTR,
   INDEX_TERM_CLASS = INDEX_TERM_CLASS,
+  INDEX_SEE_TERM_CLASS = INDEX_SEE_TERM_CLASS,
+  INDEX_SEE_ALSO_CLASS = INDEX_SEE_ALSO_CLASS,
   INDEX_SORT_KEY_ATTR = INDEX_SORT_KEY_ATTR,
 }

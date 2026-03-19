@@ -110,7 +110,15 @@ Why a `Div`? A `Para` or a `Plain` are enough in many cases, but they have no da
 an index of people with biographical profiles or a glossary with references to the pages
 where a topic is discussed).
 
-Currently there's __no support for sub-topics__, but it's planned.
+##### "See" and "see also" terms
+
+To support references to other, preferred or just related index term(s), the scripts
+of this project will use the `see-term` and `see-also` classes.
+
+A non-preferred term will have both the `index-term` and the `see-term` classes.
+
+A related term will be referenced in an element (`Div` or `Span`) with the `see-also`
+class.
 
 ## How indices are modelled in different formats
 
