@@ -76,6 +76,10 @@ local log_warn = pandoc.log.warn
 ---@field html?     string  The content of the term rendered as HTML.
 ---@field markdown? string  The content of the term rendered as markdown.
 ---@field subs      IndexTerm[] The eventual sub-terms.
+---@field see?      boolean|string For non-preferred terms: `true` for free text,
+---                                or the id of the preferred term.
+---@field seeAlso?  boolean|string[] For related terms: `true` for free text,
+---                                or the ids of the related terms.
 
 ---@class IndexRef A reference to an `IndexTerm` in the text.
 ---@field indexName string The name of the index.
