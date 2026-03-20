@@ -33,10 +33,16 @@ local INDEX_REF_WHERE_DEFAULT = INDEX_REF_AFTER
 local INDEX_REF_TEXT_ATTR = "indexed-text"
 ---The class characterizing an index term.
 local INDEX_TERM_CLASS = "index-term"
+---The class of a span of text delimiting the non-preferred term.
+local INDEX_NON_PREFERRED_CLASS = "non-preferred"
+---The class of a span of text delimiting the text "see" or equivalent (e.g. "->").
+local INDEX_SEE_CLASS = "see"
+---The class of a span of text delimiting the text "see also" or equivalent.
+local INDEX_SEE_ALSO_CLASS = "see-also"
+---The class of a span of text delimiting the preferred term.
+local INDEX_PREFERRED_CLASS = "preferred"
 ---The class of a non-preferred index term, that usually references to the preferred one.
 local INDEX_SEE_TERM_CLASS = "see-term"
----The class to characterize elements that reference related terms.
-local INDEX_SEE_ALSO_CLASS = "see-also"
 ---The attribute used as sort-key in the index.
 local INDEX_SORT_KEY_ATTR = "sort-key"
 
@@ -130,7 +136,8 @@ local function isIndexRef(indexes, span)
   local index = findIndexWith(
     indexes,
     function(i)
-      return span.classes:includes(i.refClass)
+      local classes = span.classes
+      return classes and classes:includes(i.refClass)
     end
   )
   if index then
@@ -143,14 +150,16 @@ end
 ---@param div Div A Pandoc Div.
 ---@return boolean
 local function isIndexDiv(div)
-  return div.classes:includes(INDEX_CLASS)
+  local classes = div.classes
+  return classes and classes:includes(INDEX_CLASS)
 end
 
 ---Checks whether a `Div` is meant to define an index term.
 ---@param div Div A Pandoc Div.
 ---@return boolean
 local function isIndexTermDiv(div)
-  return div.classes:includes(INDEX_TERM_CLASS)
+  local classes = div.classes
+  return classes and classes:includes(INDEX_TERM_CLASS)
 end
 
 ---Get an index object corresponding to the `Div`, if it's an index `Div`.
@@ -193,7 +202,8 @@ end
 ---@return string|nil    # the sort key of the term.
 ---@return Block[]|nil   # the content `Block`s of the `Div`.
 local function indexTermFromDiv(div)
-  if div.classes:includes(INDEX_TERM_CLASS) then
+  local classes = div.classes
+  if classes and classes:includes(INDEX_TERM_CLASS) then
     local attrs = div.attributes
     local id = div.identifier
     local index_name = attrs[INDEX_NAME_ATTR] or current_index_name
@@ -337,7 +347,8 @@ end
 ---@type Filter
 local expungeIndexTerms = {
   Div = function(div)
-    if div.classes:includes(INDEX_TERM_CLASS) then
+    local classes = div.classes
+    if classes and classes:includes(INDEX_TERM_CLASS) then
       return List({})
     end
   end
@@ -705,6 +716,9 @@ return {
   INDEX_REF_TEXT_ATTR = INDEX_REF_TEXT_ATTR,
   INDEX_TERM_CLASS = INDEX_TERM_CLASS,
   INDEX_SEE_TERM_CLASS = INDEX_SEE_TERM_CLASS,
+  INDEX_NON_PREFERRED_CLASS = INDEX_NON_PREFERRED_CLASS,
+  INDEX_SEE_CLASS = INDEX_SEE_CLASS,
   INDEX_SEE_ALSO_CLASS = INDEX_SEE_ALSO_CLASS,
+  INDEX_PREFERRED_CLASS = INDEX_PREFERRED_CLASS,
   INDEX_SORT_KEY_ATTR = INDEX_SORT_KEY_ATTR,
 }
