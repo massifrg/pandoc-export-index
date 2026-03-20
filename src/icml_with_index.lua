@@ -83,6 +83,29 @@ local function isIndexRef(span)
   return _isIndexRef(indices, span)
 end
 
+---Find the index with the specified name.
+---@param indexName string
+---@return Index|nil
+local function findIndex(indexName)
+  for i = 1, #indices do
+    local index = indices[i]
+    if index.name == indexName then
+      return index
+    end
+  end
+end
+
+---Normalize the text that goes into an ICML Index.
+---@param text string The text to normalize for ICML.
+---@return string
+local function normalizeIcmlText(text)
+  return textForXml(text, {
+    removeSoftHyphens = true,
+    removeNewlines = true,
+    maxLength = MAX_ICML_TERM_TEXT_LENGTH
+  })
+end
+
 ---A table that associates the id of an index term
 -- to the array index (offset) in terms[index_name]
 ---@type table<IndexName, table<string,IcmlIndexTerm>>
@@ -96,33 +119,27 @@ local function getIndexTermById(index_name, id)
   if not term_id_to_term[index_name] then
     local id_to_term = {}
 
-    local function memorizeTerms(tt)
+    local function memorizeTerms(tt, icmlPrefix)
       for i = 1, #tt do
         local term = tt[i]
         if term.id then
           id_to_term[term.id] = term
         end
+        if not term.icml then
+          term.icml = icmlPrefix + normalizeIcmlText(term.text)
+        end
         if #term.subs > 0 then
-          memorizeTerms(term.subs)
+          memorizeTerms(term.subs, term.icml .. ICML_TOPICN)
         end
       end
     end
-    memorizeTerms(index_terms)
+    local index = findIndex(index_name)
+    local prefix = index and index.prefix or ICML_INDEX_ID
+    memorizeTerms(index_terms, prefix .. ICML_TOPICN)
 
     term_id_to_term[index_name] = id_to_term
   end
   return term_id_to_term[index_name][id]
-end
-
----Normalize the text that goes into an ICML Index.
----@param text string The text to normalize for ICML.
----@return string
-local function normalizeIcmlText(text)
-  return textForXml(text, {
-    removeSoftHyphens = true,
-    removeNewlines = true,
-    maxLength = MAX_ICML_TERM_TEXT_LENGTH
-  })
 end
 
 ---Produce a reference to an index to be put in an ICML document.
@@ -215,7 +232,17 @@ local insert_index_references = {
   end
 }
 
-local LEVEL_INDENTATION = { "", "  ", "    ", "      " }
+local LEVEL_INDENTATION = {
+  "",
+  "  ",
+  "    ",
+  "      ",
+  "        "
+}
+
+local function getIndentation(level)
+  return LEVEL_INDENTATION[level] or ""
+end
 
 ---Appends the topics' XML lines of the terms of an index.
 ---@param index_lines string[] The lines of the resulting XML index.
@@ -226,10 +253,38 @@ local function addTermsToIndexLines(index_lines, level, prefix, index_terms)
   for t = 1, #index_terms do
     local term = index_terms[t]
     local hasSubs = #term.subs > 0
-    local indentation = LEVEL_INDENTATION[level] or ""
-    table_insert(index_lines, indentation .. getIcmlTopic(prefix, term, hasSubs))
+    local hasCrossRefs = term.see or term.seeAlso
+    local nonEmptyTag = not not (hasSubs or hasCrossRefs)
+    local indentation = getIndentation(level)
+    table_insert(index_lines, indentation .. getIcmlTopic(prefix, term, nonEmptyTag))
     if hasSubs then
       addTermsToIndexLines(index_lines, level + 1, prefix .. ICML_TOPICN .. term.icml, term.subs)
+    end
+    if term.see then
+      local xrefTag = getIndentation(level + 1) .. '<CrossReference CrossReferenceType="See"'
+      local referenced
+      if type(term.see) == 'string' then
+        referenced = term_id_to_term[term.see]
+        if referenced then
+          xrefTag = xrefTag .. ' ReferencedTopic="' .. referenced.icml .. '"'
+        end
+      end
+      table_insert(index_lines, xrefTag .. ' />')
+    elseif term.seeAlso then
+      local seeAlsoRefs = term.seeAlso
+      if type(seeAlsoRefs) == 'table' then
+        local referenced
+        for sa = 1, #seeAlsoRefs do
+          local xrefTag = getIndentation(level + 1) .. '<CrossReference CrossReferenceType="SeeAlso"'
+          referenced = term_id_to_term[seeAlsoRefs[sa]]
+          if referenced then
+            xrefTag = xrefTag .. ' ReferencedTopic="' .. referenced.icml .. '"'
+          end
+          table_insert(index_lines, xrefTag .. ' />')
+        end
+      end
+    end
+    if nonEmptyTag then
       table_insert(index_lines, indentation .. '</Topic>')
     end
   end
@@ -246,7 +301,7 @@ local set_index_variable = {
     -- set the starting prefix: ICML_INDEX_ID if there's one index, append the index name if there are more indices
     local prefix = ICML_INDEX_ID
     if just_one_index then
-      prefix = indices[1].prefix
+      indices[1].prefix = ICML_INDEX_ID
     end
     ---@type IcmlIndexTerm[] The terms of the base level (head terms of the only index or the indices)
     local level1terms = {}
