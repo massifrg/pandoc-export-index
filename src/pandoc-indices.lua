@@ -197,10 +197,11 @@ end
 
 ---Get an index term object, if it's an index term `Div`.
 ---@param div Div A Pandoc `Div`.
----@return IndexName|nil # the name of the index.
----@return string|nil    # the identifier of the term.
----@return string|nil    # the sort key of the term.
----@return Block[]|nil   # the content `Block`s of the `Div`.
+---@return IndexName|nil   # the name of the index.
+---@return string|nil      # the identifier of the term.
+---@return string|nil      # the sort key of the term.
+---@return Block[]|nil     # the content `Block`s of the `Div`.
+---@return string|true|nil # non-preferred term (true), optionally the preferred term id (string).
 local function indexTermFromDiv(div)
   local classes = div.classes
   if classes and classes:includes(INDEX_TERM_CLASS) then
@@ -208,16 +209,25 @@ local function indexTermFromDiv(div)
     local id = div.identifier
     local index_name = attrs[INDEX_NAME_ATTR] or current_index_name
     local sort_key = attrs[INDEX_SORT_KEY_ATTR]
-    -- remove sub-terms from content
+    local see
+    if classes:includes(INDEX_SEE_TERM_CLASS) then
+      see = true
+    end
+    -- read contents, not including sub-terms
     local content = List()
     local div_content = div.content
     for i = 1, #div_content do
       local block = div_content[i]
       if not isIndexTermDiv(block) then
         content:insert(block)
+      elseif see then
+        log_warn("A non-preferred term can't have sub-terms")
+        if id then
+        log_warn('The term with id="' .. id .. '" has the "' .. INDEX_SEE_TERM_CLASS .. '", but it has sub-terms')
+        end
       end
     end
-    return index_name, id, sort_key, content
+    return index_name, id, sort_key, content, see
   end
 end
 
@@ -355,13 +365,14 @@ local expungeIndexTerms = {
 }
 
 ---Add an IndexTerm to the table of the terms of an index.
----@param index_name string      The index name.
----@param id         string      The term identifier.
----@param level      integer     The term level.
----@param sort_key   string|nil  The string to use to sort terms.
----@param content    Block[]|nil The content of the term.
+---@param index_name string          The index name.
+---@param id         string          The term identifier.
+---@param level      integer         The term level.
+---@param sort_key   string|nil      The string to use to sort terms.
+---@param content    Block[]|nil     The content of the term.
+---@param see        true|string|nil `true` if non-preferred, or id of the preferred term.
 ---@return IndexTerm
-local function createIndexTerm(index_name, id, level, sort_key, content)
+local function createIndexTerm(index_name, id, level, sort_key, content, see)
   local index_terms = terms[index_name]
   if not index_terms then
     terms[index_name] = {}
@@ -389,7 +400,8 @@ local function createIndexTerm(index_name, id, level, sort_key, content)
     text = string_gsub(text, "[\r\n]+$", ""),
     blocks = content_without_subs.blocks,
     html = html,
-    subs = {}
+    subs = {},
+    see = see,
   }
   return term
 end
@@ -465,19 +477,21 @@ local current_level = 0
 
 ---A Pandoc filter that collects all the index terms
 ---from the `Div`s that have the `INDEX_TERM_CLASS`.
+---The Div field is not defined here, because it calls this filter
+---(`collect_index_terms`) recursively, so it's assigned after the
+---`collectIndexTerms` function is defined below.
 local collect_index_terms = {
   traverse = 'topdown',
   -- Div = collectIndexTerms
 }
 
 local collectIndexTerms = function(div)
-  local index_name, id, sort_key, content = indexTermFromDiv(div)
+  local index_name, id, sort_key, content, see = indexTermFromDiv(div)
   if index_name and id then
     current_level = current_level + 1
-    local term = createIndexTerm(index_name, id, current_level, sort_key, content)
+    local term = createIndexTerm(index_name, id, current_level, sort_key, content, see)
     local cur_index_terms = terms[index_name]
-    local index_terms
-    index_terms = cur_index_terms
+    local index_terms = cur_index_terms
     for l = 2, current_level do
       if #index_terms == 0 then
         table_insert(
