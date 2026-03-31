@@ -66,6 +66,9 @@ local terms = {}
 ---to discriminate among them.
 ---@type boolean
 local just_one_index = true
+---The current index (used in `addTermsToIndexLines` function).
+---@type Index
+local current_index = nil
 
 local _isIndexRef = pandocIndices.isIndexRef
 local textForXml = pandocIndices.textForXml
@@ -115,30 +118,6 @@ local term_id_to_term = {}
 ---@param id         string    The index term identifier.
 ---@return IcmlIndexTerm|nil
 local function getIndexTermById(index_name, id)
-  local index_terms = terms[index_name] or {}
-  if not term_id_to_term[index_name] then
-    local id_to_term = {}
-
-    local function memorizeTerms(tt, icmlPrefix)
-      for i = 1, #tt do
-        local term = tt[i]
-        if term.id then
-          id_to_term[term.id] = term
-        end
-        if not term.icml then
-          term.icml = icmlPrefix + normalizeIcmlText(term.text)
-        end
-        if #term.subs > 0 then
-          memorizeTerms(term.subs, term.icml .. ICML_TOPICN)
-        end
-      end
-    end
-    local index = findIndex(index_name)
-    local prefix = index and index.prefix or ICML_INDEX_ID
-    memorizeTerms(index_terms, prefix .. ICML_TOPICN)
-
-    term_id_to_term[index_name] = id_to_term
-  end
   return term_id_to_term[index_name][id]
 end
 
@@ -179,15 +158,10 @@ local function getIcmlReference(idref, index_name, index_prefix)
 end
 
 ---Create an index topic for ICML.
----@param  prefix string    A prefix for the topic identifier.
 ---@param  term   IcmlIndexTerm A term of the index.
 ---@param  isOpen boolean   `true` if the topic has sub-topics.
 ---@return string
-local function getIcmlTopic(prefix, term, isOpen)
-  if not term.icml then
-    term.icml = normalizeIcmlText(term.text)
-  end
-  term.icmlid = prefix .. ICML_TOPICN .. term.icml
+local function getIcmlTopic(term, isOpen)
   local ending
   if isOpen then
     ending = ' >'
@@ -244,50 +218,79 @@ local function getIndentation(level)
   return LEVEL_INDENTATION[level] or ""
 end
 
+local function getCrossReferenceTag(level, index_name, preferred_id, term)
+  local chunks = { getIndentation(level + 1) .. '<CrossReference ' }
+  local referenced = getIndexTermById(index_name, preferred_id)
+  local refTopic = referenced and referenced.icmlid or preferred_id
+  log_info('PREFERRED term for "' .. term.icml .. '" [' .. preferred_id .. ']: ' .. refTopic)
+  local refIcml = referenced and referenced.icml
+  local crossRefType = refIcml and "CustomCrossReference" or "See"
+  table_insert(chunks, 'CrossReferenceType="' .. crossRefType
+    .. '" ReferencedTopic="' .. refTopic .. '"')
+  if refIcml then
+    table_insert(chunks, ' CustomTypeString="' .. refIcml .. '"')
+  end
+  table_insert(chunks, ' />')
+  return table_concat(chunks, '')
+end
+
 ---Appends the topics' XML lines of the terms of an index.
 ---@param index_lines string[] The lines of the resulting XML index.
 ---@param level integer The current level of the terms (1 = head terms or indices in case of multiple indices).
----@param prefix string The prefix in the topic `Name` attribute.
 ---@param index_terms IcmlIndexTerm[] The index terms or the sub-terms of a term.
-local function addTermsToIndexLines(index_lines, level, prefix, index_terms)
+local function addTermsToIndexLines(index_lines, level, index_terms)
+  if just_one_index and level == 1 then
+    current_index = indices[1]
+  end
   for t = 1, #index_terms do
+    if not just_one_index and level == 1 then
+      current_index = indices[t]
+    end
     local term = index_terms[t]
     local hasSubs = #term.subs > 0
-    local hasCrossRefs = term.see or term.seeAlso
-    local nonEmptyTag = not not (hasSubs or hasCrossRefs)
+    local seeRefs = term.see
+    local seeAlsoRefs = term.seeAlso
+    local hasSee = seeRefs and (seeRefs == true or #seeRefs > 0)
+    local hasSeeAlso = seeAlsoRefs and #seeAlsoRefs > 0
+    local nonEmptyTag = not not (hasSubs or hasSee or hasSeeAlso)
     local indentation = getIndentation(level)
-    table_insert(index_lines, indentation .. getIcmlTopic(prefix, term, nonEmptyTag))
+    table_insert(index_lines, indentation .. getIcmlTopic(term, nonEmptyTag))
     if hasSubs then
-      addTermsToIndexLines(index_lines, level + 1, prefix .. ICML_TOPICN .. term.icml, term.subs)
+      addTermsToIndexLines(index_lines, level + 1, term.subs)
     end
-    if term.see then
-      local xrefTag = getIndentation(level + 1) .. '<CrossReference CrossReferenceType="See"'
-      local referenced
-      if type(term.see) == 'string' then
-        referenced = term_id_to_term[term.see]
-        if referenced then
-          xrefTag = xrefTag .. ' ReferencedTopic="' .. referenced.icml .. '"'
+    if hasSee then
+      if type(seeRefs) == 'table' and #seeRefs > 0 then
+        for s = 1, #seeRefs do
+          table_insert(index_lines,
+            getCrossReferenceTag(level, current_index.name, seeRefs[s], term))
         end
       end
-      table_insert(index_lines, xrefTag .. ' />')
-    elseif term.seeAlso then
-      local seeAlsoRefs = term.seeAlso
-      if type(seeAlsoRefs) == 'table' then
-        local referenced
-        for sa = 1, #seeAlsoRefs do
-          local xrefTag = getIndentation(level + 1) .. '<CrossReference CrossReferenceType="SeeAlso"'
-          referenced = term_id_to_term[seeAlsoRefs[sa]]
-          if referenced then
-            xrefTag = xrefTag .. ' ReferencedTopic="' .. referenced.icml .. '"'
-          end
-          table_insert(index_lines, xrefTag .. ' />')
+    elseif hasSeeAlso then
+      local related, refIndex
+      for sa = 1, #seeAlsoRefs do
+        local xrefTag = getIndentation(level + 1) .. '<CrossReference CrossReferenceType="SeeAlso"'
+        related = term.seeAlso[sa]
+        local referenced = getIndexTermById(current_index.name or INDEX_NAME_DEFAULT, related)
+        if refIndex then
+          referenced = index_terms[refIndex]
         end
+        xrefTag = xrefTag .. ' ReferencedTopic="'
+            .. (referenced and referenced.icmlid or related)
+            .. '"'
+        table_insert(index_lines, xrefTag .. ' />')
       end
     end
     if nonEmptyTag then
       table_insert(index_lines, indentation .. '</Topic>')
     end
   end
+end
+
+local function indexAsIcmlIndexTerm(index, tt, sortKey)
+  local t = indexAsIndexTerm(index, tt, sortKey) ---@class IcmlIndexTerm
+  t.icml = normalizeIcmlText(index.name)
+  t.icmlid = t.icml
+  return t
 end
 
 ---A Pandoc filter that sets the `index` variable to be used in `WriterOptions.variables`.
@@ -310,11 +313,12 @@ local set_index_variable = {
     else
       for i = 1, #indices do
         local index = indices[i]
-        table_insert(level1terms, indexAsIndexTerm(index, terms[index.name], tostring(i)))
+        local index_as_term = indexAsIcmlIndexTerm(index, terms[index.name], tostring(i))
+        table_insert(level1terms, index_as_term)
       end
     end
     table_insert(index_lines, '<Index Self="' .. prefix .. '">')
-    addTermsToIndexLines(index_lines, 1, prefix, level1terms)
+    addTermsToIndexLines(index_lines, 1, level1terms)
     table_insert(index_lines, '</Index>')
     index_var = table_concat(index_lines, '\n')
     return doc
@@ -328,11 +332,39 @@ local indices_filters = {
   pandocIndices.expungeIndexTerms
 }
 
+local function fillIcmlFieldsOfIndex(index_name, tt, icmlPrefix)
+  local id_to_term = term_id_to_term[index_name]
+  if not id_to_term then
+    term_id_to_term[index_name] = {}
+    id_to_term = term_id_to_term[index_name]
+  end
+  for i = 1, #tt do
+    local term = tt[i]
+    term.icml = normalizeIcmlText(term.text)
+    term.icmlid = icmlPrefix .. term.icml
+    if term.id then
+      id_to_term[term.id] = term
+    end
+    if #term.subs > 0 then
+      fillIcmlFieldsOfIndex(index_name, term.subs, term.icmlid .. ICML_TOPICN)
+    end
+  end
+end
+
+local function fillIcmlFields()
+  local prefix = #indices > 1 and ICML_INDEX_ID .. ICML_TOPICN or ""
+  for i = 1, #indices do
+    local index = indices[i]
+    fillIcmlFieldsOfIndex(index.name, terms[index.name], prefix .. index.name .. ICML_TOPICN)
+  end
+end
+
 ---Pandoc writer to produce an ICML document with an index.
 function Writer(doc, opts)
   local collected = pandocIndices.collectIndices(doc)
   indices = collected.indices
   terms = collected.terms
+  fillIcmlFields()
   local filtered = doc
   for i = 1, #indices_filters do
     log_info("applying filter #" .. i)

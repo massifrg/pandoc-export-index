@@ -33,14 +33,16 @@ local INDEX_REF_WHERE_DEFAULT = INDEX_REF_AFTER
 local INDEX_REF_TEXT_ATTR = "indexed-text"
 ---The class characterizing an index term.
 local INDEX_TERM_CLASS = "index-term"
----The class of a span of text delimiting the non-preferred term.
-local INDEX_NON_PREFERRED_CLASS = "non-preferred"
 ---The class of a span of text delimiting the text "see" or equivalent (e.g. "->").
 local INDEX_SEE_CLASS = "see"
 ---The class of a span of text delimiting the text "see also" or equivalent.
 local INDEX_SEE_ALSO_CLASS = "see-also"
 ---The class of a span of text delimiting the preferred term.
 local INDEX_PREFERRED_CLASS = "preferred"
+---The class of a span of text delimiting the non-preferred term.
+local INDEX_NON_PREFERRED_CLASS = "non-preferred"
+---The class of a span of text delimiting a related term.
+local INDEX_RELATED_CLASS = "related"
 ---The class of a non-preferred index term, that usually references to the preferred one.
 local INDEX_SEE_TERM_CLASS = "see-term"
 ---The attribute used as sort-key in the index.
@@ -64,6 +66,7 @@ local utf8lower = pandoc.text.lower
 local utf8sub = pandoc.text.sub
 local log_info = pandoc.log.info
 local log_warn = pandoc.log.warn
+local stringify = pandoc.utils.stringify
 
 ---@alias IndexName string The name of an index.
 
@@ -82,10 +85,9 @@ local log_warn = pandoc.log.warn
 ---@field html?     string  The content of the term rendered as HTML.
 ---@field markdown? string  The content of the term rendered as markdown.
 ---@field subs      IndexTerm[] The eventual sub-terms.
----@field see?      boolean|string For non-preferred terms: `true` for free text,
----                                or the id of the preferred term.
----@field seeAlso?  boolean|string[] For related terms: `true` for free text,
----                                or the ids of the related terms.
+---@field see?      boolean|string[] For non-preferred terms: `true` for free text,
+---                          or these id(s) of the preferred term(s).
+---@field seeAlso?  string[] The ids of the related terms.
 
 ---@class IndexRef A reference to an `IndexTerm` in the text.
 ---@field indexName string The name of the index.
@@ -98,12 +100,54 @@ local log_warn = pandoc.log.warn
 ---@class TermPath
 ---@field path integer[] An array of the array indexes of the path of a term: head, sub1, sub2, etc.
 
+---@class TermToTermRef A reference to a (preferred) `IndexTerm` in the index.
+---@field nonPreferred? Inline[] The content of the non-preferred term, before "see", "see also", etc.
+---@field preferred? Inline[] The content of the preferred term, after "see", "see also", etc.
+---@field see? string[] The ids of the preferred terms.
+---@field seeAlso? string[] The ids of the related terms.
+
 ---@type Index[] An array of indices defined in a document.
 local indices = {}
 ---@type string The current index during parsing.
 local current_index_name
 ---@type table<IndexName,IndexTerm[]> An associative array index name => index terms.
 local terms = {}
+---@type TermToTermRef A variable used by the `get_term_references filter`.
+local termToTermRefs = { see = {}, seeAlso = {} }
+
+---@type Filter
+local get_term_references = {
+  Span = function(span)
+    local classes = span.classes
+    if classes then
+      if classes:includes(INDEX_PREFERRED_CLASS) then
+        local see = termToTermRefs.see or {}
+        table_insert(see, span.attributes.idref or stringify(span.content))
+        termToTermRefs.see = see
+        termToTermRefs.preferred = span.content
+      elseif classes:includes(INDEX_NON_PREFERRED_CLASS) then
+        termToTermRefs.nonPreferred = span.content
+      elseif classes:includes(INDEX_RELATED_CLASS) then
+        local seeAlso = termToTermRefs.seeAlso or {}
+        table_insert(seeAlso, span.attributes.idref or stringify(span.content))
+        termToTermRefs.seeAlso = seeAlso
+      end
+    end
+  end
+}
+
+---Get the see and seeAlso spans in an index term content.
+---@param content Block|Inline|Blocks|Inlines
+---@return TermToTermRef
+local function getTermReferences(content)
+  -- pandoc.log.warn("looking for references in: " .. stringify(content))
+  termToTermRefs = { see = {}, seeAlso = {} }
+  content:walk(get_term_references)
+  if #termToTermRefs.see > 0 then
+    pandoc.log.warn("in «" .. stringify(content) .. "» found reference(s) to term(s) " .. table.concat(termToTermRefs.see, ", "))
+  end
+  return termToTermRefs
+end
 
 ---Search for an Index that satisfies a predicate.
 ---@param indexes   Index[] An array of indices.
@@ -197,11 +241,12 @@ end
 
 ---Get an index term object, if it's an index term `Div`.
 ---@param div Div A Pandoc `Div`.
----@return IndexName|nil   # the name of the index.
----@return string|nil      # the identifier of the term.
----@return string|nil      # the sort key of the term.
----@return Block[]|nil     # the content `Block`s of the `Div`.
----@return string|true|nil # non-preferred term (true), optionally the preferred term id (string).
+---@return IndexName|nil     # the name of the index.
+---@return string|nil        # the identifier of the term.
+---@return string|nil        # the sort key of the term.
+---@return Block[]|nil       # the content `Block`s of the `Div`.
+---@return string[]|true|nil # non-preferred term (true), optionally the preferred term ids.
+---@return string[]|nil      # the optional related terms ids.
 local function indexTermFromDiv(div)
   local classes = div.classes
   if classes and classes:includes(INDEX_TERM_CLASS) then
@@ -209,7 +254,8 @@ local function indexTermFromDiv(div)
     local id = div.identifier
     local index_name = attrs[INDEX_NAME_ATTR] or current_index_name
     local sort_key = attrs[INDEX_SORT_KEY_ATTR]
-    local see
+    local see ---@type boolean|string[]
+    local seeAlso ---@type string[]
     if classes:includes(INDEX_SEE_TERM_CLASS) then
       see = true
     end
@@ -219,15 +265,29 @@ local function indexTermFromDiv(div)
     for i = 1, #div_content do
       local block = div_content[i]
       if not isIndexTermDiv(block) then
-        content:insert(block)
+        local refs = getTermReferences(block)
+        if not see and (refs.see == true or #refs.see > 0) then
+          log_warn('The term with id="' .. id .. '" has a span marked as "' .. INDEX_PREFERRED_CLASS .. '"'
+          .. ', but it has no "' .. INDEX_SEE_TERM_CLASS .. '"')
+        end
+        if #refs.see > 0 then
+          log_info('The term with id="' .. id .. '" has preferred terms: ' .. table.concat(refs.see, ", "))
+        end
+        if refs.nonPreferred then
+          content:insert(Para(refs.nonPreferred))
+        else
+          content:insert(block)
+        end
+        see = refs.see
+        seeAlso = refs.seeAlso
       elseif see then
         log_warn("A non-preferred term can't have sub-terms")
         if id then
-        log_warn('The term with id="' .. id .. '" has the "' .. INDEX_SEE_TERM_CLASS .. '", but it has sub-terms')
+          log_warn('The term with id="' .. id .. '" has the "' .. INDEX_SEE_TERM_CLASS .. '", but it has sub-terms')
         end
       end
     end
-    return index_name, id, sort_key, content, see
+    return index_name, id, sort_key, content, see, seeAlso
   end
 end
 
@@ -370,9 +430,10 @@ local expungeIndexTerms = {
 ---@param level      integer         The term level.
 ---@param sort_key   string|nil      The string to use to sort terms.
 ---@param content    Block[]|nil     The content of the term.
----@param see        true|string|nil `true` if non-preferred, or id of the preferred term.
+---@param see?       true|string[]   `true` if non-preferred, or id of the preferred term.
+---@param seeAlso?   string[]        The related terms' ids.
 ---@return IndexTerm
-local function createIndexTerm(index_name, id, level, sort_key, content, see)
+local function createIndexTerm(index_name, id, level, sort_key, content, see, seeAlso)
   local index_terms = terms[index_name]
   if not index_terms then
     terms[index_name] = {}
@@ -402,6 +463,7 @@ local function createIndexTerm(index_name, id, level, sort_key, content, see)
     html = html,
     subs = {},
     see = see,
+    seeAlso = seeAlso,
   }
   return term
 end
@@ -486,10 +548,10 @@ local collect_index_terms = {
 }
 
 local collectIndexTerms = function(div)
-  local index_name, id, sort_key, content, see = indexTermFromDiv(div)
+  local index_name, id, sort_key, content, see, seeAlso = indexTermFromDiv(div)
   if index_name and id then
     current_level = current_level + 1
-    local term = createIndexTerm(index_name, id, current_level, sort_key, content, see)
+    local term = createIndexTerm(index_name, id, current_level, sort_key, content, see, seeAlso)
     local cur_index_terms = terms[index_name]
     local index_terms = cur_index_terms
     for l = 2, current_level do
