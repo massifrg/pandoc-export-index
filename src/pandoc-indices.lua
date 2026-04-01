@@ -105,6 +105,8 @@ local stringify = pandoc.utils.stringify
 ---@field preferred? Inline[] The content of the preferred term, after "see", "see also", etc.
 ---@field see? string[] The ids of the preferred terms.
 ---@field seeAlso? string[] The ids of the related terms.
+---@field seeText? string The text "see" or equivalent ("->", "refer to", etc.)
+---@field seeAlsoText? string The text "see also" or equivalent ("refer also to", etc.)
 
 ---@type Index[] An array of indices defined in a document.
 local indices = {}
@@ -131,6 +133,10 @@ local get_term_references = {
         local seeAlso = termToTermRefs.seeAlso or {}
         table_insert(seeAlso, span.attributes.idref or stringify(span.content))
         termToTermRefs.seeAlso = seeAlso
+      elseif classes:includes(INDEX_SEE_CLASS) then
+        termToTermRefs.seeText = stringify(span.content)
+      elseif classes:includes(INDEX_SEE_ALSO_CLASS) then
+        termToTermRefs.seeAlsoText = stringify(span.content)
       end
     end
   end
