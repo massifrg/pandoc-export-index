@@ -39,6 +39,7 @@ local MAX_ICML_TERM_TEXT_LENGTH = nil
 local pandoc = pandoc
 local List = pandoc.List
 local RawInline = pandoc.RawInline
+local render = pandoc.layout.render
 local string_find = string.find
 local string_sub = string.sub
 local table_insert = table.insert
@@ -61,6 +62,11 @@ local index_var = ""
 ---All the terms of all indices.
 ---@type table<IndexName,IcmlIndexTerm[]>
 local terms = {}
+---The variables to customize the "see" and "see also" texts.
+---They are set with `-V see-text=...` or `--variable=see-text=...`.
+local seeText
+---The custom "see also" text, set with `-V see-also-text=...` or `--variable=see-also-text=...`.
+local seeAlsoText
 ---Since ICML supports only one index, the Writer changes its behavior
 ---when there are multiple indices; in that case we sacrifice the first level
 ---to discriminate among them.
@@ -214,24 +220,50 @@ local LEVEL_INDENTATION = {
   "        "
 }
 
+---Return a string of spaces matching the indentation of the term level.
+---@param level integer The level of the term.
+---@return string
 local function getIndentation(level)
   return LEVEL_INDENTATION[level] or ""
 end
 
-local function getCrossReferenceTag(level, index_name, preferred_id, term)
+---Return a `<CrossReference>` ICML tag
+---@param level integer The level of the term.
+---@param index_name string The name of the index the term belongs to.
+---@param preferred_id string The identifier of the preferred term this non-preferred term points to.
+---@param term IcmlIndexTerm The current (non-preferred) term of the index.
+---@param prefix string?
+---@return string
+---@return string?
+local function getCrossReferenceTag(level, index_name, preferred_id, term, prefix)
   local chunks = { getIndentation(level + 1) .. '<CrossReference ' }
   local referenced = getIndexTermById(index_name, preferred_id)
-  local refTopic = referenced and referenced.icmlid or preferred_id
+  local refTopic
+  local newReferencedTopic ---@type string?
+  if referenced then
+    refTopic = referenced.icmlid
+  else
+    refTopic = preferred_id
+    newReferencedTopic = '<Topic'
+        .. ' Self="' .. refTopic .. '"'
+        .. ' SortOrder="' .. (preferred_id or '') .. '"'
+        .. ' Name="' .. preferred_id .. '" />'
+  end
   log_info('PREFERRED term for "' .. term.icml .. '" [' .. preferred_id .. ']: ' .. refTopic)
-  local refIcml = referenced and referenced.icml
-  local crossRefType = refIcml and "CustomCrossReference" or "See"
+  local crossRefType, customTypeString
+  if seeText then
+    crossRefType = "CustomCrossReferenceBefore"
+    customTypeString = seeText
+  else
+    crossRefType = "See"
+  end
   table_insert(chunks, 'CrossReferenceType="' .. crossRefType
     .. '" ReferencedTopic="' .. refTopic .. '"')
-  if refIcml then
-    table_insert(chunks, ' CustomTypeString="' .. refIcml .. '"')
+  if customTypeString then
+    table_insert(chunks, ' CustomTypeString="' .. customTypeString .. '"')
   end
   table_insert(chunks, ' />')
-  return table_concat(chunks, '')
+  return table_concat(chunks, ''), newReferencedTopic
 end
 
 ---Appends the topics' XML lines of the terms of an index.
@@ -261,8 +293,8 @@ local function addTermsToIndexLines(index_lines, level, index_terms)
     if hasSee then
       if type(seeRefs) == 'table' and #seeRefs > 0 then
         for s = 1, #seeRefs do
-          table_insert(index_lines,
-            getCrossReferenceTag(level, current_index.name, seeRefs[s], term))
+          local xref, newTopic = getCrossReferenceTag(level, current_index.name, seeRefs[s], term)
+          table_insert(index_lines, xref)
         end
       end
     elseif hasSeeAlso then
@@ -286,6 +318,12 @@ local function addTermsToIndexLines(index_lines, level, index_terms)
   end
 end
 
+---In documents with more than one index, the first level is used to host the indices,
+---so this function make an index term out of an index, whose terms will be its sub-terms.
+---@param index Index The index to become a first-level term.
+---@param tt IcmlIndexTerm[] The terms of the index, that will become second-level terms.
+---@param sortKey string The index sort key, to decide the order of the indices.
+---@return IcmlIndexTerm
 local function indexAsIcmlIndexTerm(index, tt, sortKey)
   local t = indexAsIndexTerm(index, tt, sortKey) ---@class IcmlIndexTerm
   t.icml = normalizeIcmlText(index.name)
@@ -332,6 +370,10 @@ local indices_filters = {
   pandocIndices.expungeIndexTerms
 }
 
+---Recursively populates the ICML fields of the index terms.
+---@param index_name string The name of the index.
+---@param tt IcmlIndexTerm[] The terms of the index.
+---@param icmlPrefix string The prefix to be prepended to the terms identifiers.
 local function fillIcmlFieldsOfIndex(index_name, tt, icmlPrefix)
   local id_to_term = term_id_to_term[index_name]
   if not id_to_term then
@@ -351,6 +393,7 @@ local function fillIcmlFieldsOfIndex(index_name, tt, icmlPrefix)
   end
 end
 
+---Recursively populates the ICML fields of all the indices.
 local function fillIcmlFields()
   local prefix = #indices > 1 and ICML_INDEX_ID .. ICML_TOPICN or ""
   for i = 1, #indices do
@@ -359,8 +402,23 @@ local function fillIcmlFields()
   end
 end
 
+---Retrieve a variable from WriterOptions.
+---@param opts WriterOptions
+---@param key string The variable name.
+---@return string|nil
+local function getStringVariable(opts, key)
+  local v = opts.variables[key]
+  if v then
+    return render(v)
+  end
+end
+
 ---Pandoc writer to produce an ICML document with an index.
+---@param doc Pandoc
+---@param opts WriterOptions
 function Writer(doc, opts)
+  seeText = getStringVariable(opts, "see-text")
+  seeAlsoText = getStringVariable(opts, "see-also-text")
   local collected = pandocIndices.collectIndices(doc)
   indices = collected.indices
   terms = collected.terms
