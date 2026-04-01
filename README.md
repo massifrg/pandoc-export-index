@@ -684,9 +684,12 @@ and finally the `text` field.
 
 ## Version
 
-The current version is 0.7.0 (2025, June 25th).
+The current version is 0.7.1 (2026, April 1st).
 
 ## Changelog
+
+- Version 0.7.1: initial support for cross references between index terms (see ...)
+                 in ICML.
 
 - Version 0.7.0: support for index sub terms of any depth;
                  ODT and DOCX filters support multiple indices and sub-terms.
