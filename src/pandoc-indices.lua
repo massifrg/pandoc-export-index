@@ -150,7 +150,9 @@ local function getTermReferences(content)
   termToTermRefs = { see = {}, seeAlso = {} }
   content:walk(get_term_references)
   if #termToTermRefs.see > 0 then
-    pandoc.log.warn("in «" .. stringify(content) .. "» found reference(s) to term(s) " .. table.concat(termToTermRefs.see, ", "))
+    log_info('in "' .. stringify(content)
+      .. '" found reference(s) to term(s) '
+      .. table.concat(termToTermRefs.see, ", "))
   end
   return termToTermRefs
 end
@@ -263,7 +265,7 @@ local function indexTermFromDiv(div)
     local see ---@type boolean|string[]
     local seeAlso ---@type string[]
     if classes:includes(INDEX_SEE_TERM_CLASS) then
-      see = true
+      see = attrs.idref and { attrs.idref } or true
     end
     -- read contents, not including sub-terms
     local content = List()
@@ -274,7 +276,7 @@ local function indexTermFromDiv(div)
         local refs = getTermReferences(block)
         if not see and (refs.see == true or #refs.see > 0) then
           log_warn('The term with id="' .. id .. '" has a span marked as "' .. INDEX_PREFERRED_CLASS .. '"'
-          .. ', but it has no "' .. INDEX_SEE_TERM_CLASS .. '"')
+            .. ', but it has no "' .. INDEX_SEE_TERM_CLASS .. '"')
         end
         if #refs.see > 0 then
           log_info('The term with id="' .. id .. '" has preferred terms: ' .. table.concat(refs.see, ", "))
