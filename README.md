@@ -245,9 +245,12 @@ Here's the custom writer's main function:
 
 ```lua
 function Writer(doc, opts)
+  seeText = getStringVariable(opts, "see-text")
+  seeAlsoText = getStringVariable(opts, "see-also-text")
   local collected = pandocIndices.collectIndices(doc)
   indices = collected.indices
   terms = collected.terms
+  fillIcmlFields()
   local filtered = doc
   for i = 1, #indices_filters do
     log_info("applying filter #" .. i)
@@ -256,7 +259,7 @@ function Writer(doc, opts)
   end
   -- make a clone of opts and add the index variable
   local options = pandoc.WriterOptions(opts)
-  options.variables.index = index_var
+  options.variables.icmlIndex = index_var
   return pandoc.write(filtered, 'icml', options)
 end
 ```
@@ -265,6 +268,42 @@ Some filters are applied to collect index data and fill the `index_var` variable
 whose value is put into `options.variables.index` before calling 
 `pandoc.write(filtered, 'icml', options)`.
 The writer then replaces `$index$` in the template with the value of `options.variables.index`.
+
+### Support for cross references between index terms
+
+Version 0.7.1 provides limited support for cross references between index terms,
+in particular for non-preferred terms that reference preferred ones with a "see ...".
+
+Here's an example of non-preferred index term:
+
+```markdown
+::: {#ares .index-term .see-term}
+[Ares]{.non-preferred}, see [Mars]{.preferred idref="mars"}.
+:::
+...
+::: {#mars .index-term}
+Mars.
+:::
+```
+
+or
+
+```markdown
+::: {#ares .index-term .see-term idref="mars"}
+Ares, see Mars.
+:::
+...
+::: {#mars .index-term}
+Mars.
+:::
+```
+
+The `Span`s with `non-preferred` and `preferred` classes carry more precise
+information, but the second form (`idref` in the term's `Div`) is supported too.
+
+The variable `see-text` (set it with `-V see-text=... in the CLI) is used
+to customize the "see" text between the non-preferred and the preferred terms,
+but only when the first form is used.
 
 ## Exporting indices to DOCX: the `docx_index.lua` filter
 
