@@ -1,6 +1,6 @@
 --[[
     indices2json.lua: A [Pandoc writer](https://pandoc.org/custom-writers.html)
-                      to extract the indices of a document in JSON format. 
+                      to extract the indices of a document in JSON format.
     Copyright:        (c) 2024 M. Farinella
     License:          MIT - see LICENSE file for details
     Usage:            See README.md for details
@@ -8,6 +8,8 @@
 
 -- load type annotations from common file (just for development under VS Code/Codium)
 ---@module 'pandoc-indices'
+
+local ALT_ID_VARIABLE_NAME = "alt_id_attribute"
 
 ---Add paths to search for Lua code to be loaded with `require`.
 ---See [here](https://github.com/jgm/pandoc/discussions/9598).
@@ -30,7 +32,14 @@ addPathsToLuaPath({ pandoc.path.directory(PANDOC_SCRIPT_FILE) })
 local pandocIndices = require('pandoc-indices')
 
 function Writer(doc, opts)
-  local data = pandocIndices.collectIndices(doc)
+  local variables = opts.variables
+  local alt_id_attr_var = variables and variables[ALT_ID_VARIABLE_NAME]
+  local alt_id_attr
+  if alt_id_attr_var then
+    alt_id_attr = alt_id_attr_var:render()
+    pandoc.log.warn('Using attribute "' .. alt_id_attr .. '" to read the identifier of index terms')
+  end
+  local data = pandocIndices.collectIndices(doc, alt_id_attr)
   return pandoc.json.encode(data)
 end
 

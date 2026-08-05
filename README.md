@@ -217,6 +217,35 @@ and you'll get something like this:
 }
 ```
 
+The `alt_id_attribute` variable can be used to tell the script that a different
+attribute may be used to specify the identifier of an index term.
+
+Usually the identifier field of the `Attr` structure of a `Div` that models an
+index term is used as its id.
+
+There could be an analytical index, where a term is cited more than once in the
+index tree. Example:
+
+```
+Office apps
+    - in Windows OS
+...
+Windows OS
+    - office apps
+```
+
+The term in a thesaurus would be "Office apps in Windows OS", but it may appear
+in two different places of the index tree.
+
+Being the same term in the thesaurus, they share the same identifier in the index,
+but using the identifier field of the term's `Div` would break the rule of its uniqueness.
+
+The following example uses the "term-id" attribute as identifier:
+ 
+```sh
+pandoc -f markdown -V alt_id_attribute=term-id -t indices2json.lua analytical_index.md
+```
+
 ## Exporting an index to ICML: the `icml_with_index.lua` Writer
 
 ICML has only one index, so you can't define more indices inside a document.
@@ -684,9 +713,15 @@ and finally the `text` field.
 
 ## Version
 
-The current version is 0.7.1 (2026, April 1st).
+The current version is 0.7.2 (2026, August 3rd).
 
 ## Changelog
+
+- Version 0.7.2: the id of index terms can be picked from an attribute different from
+                 the `Attr` identifier. This is useful in indices, such as analytical ones,
+                 where a term can be cited more than once, in different parts of the index
+                 tree, so that using the `Div` identifier would break the rule of its 
+                 uniqueness.
 
 - Version 0.7.1: initial support for cross references between index terms (see ...)
                  in ICML.
