@@ -110,15 +110,20 @@ Why a `Div`? A `Para` or a `Plain` are enough in many cases, but they have no da
 an index of people with biographical profiles or a glossary with references to the pages
 where a topic is discussed).
 
-##### "See" and "see also" terms
+##### Non-preferred ("see") and related ("see also") terms
 
 To support references to other, preferred or just related index term(s), the scripts
-of this project will use the `see-term` and `see-also` classes.
+of this project will use the `see-term` and `see-also-term` classes.
 
 A non-preferred term will have both the `index-term` and the `see-term` classes.
 
-A related term will be referenced in an element (`Div` or `Span`) with the `see-also`
+A related term will be referenced in an element (`Div` or `Span`) with the `see-also-term`
 class.
+
+A couple of classes, `see` and `see-also`, can be used to delimit the filler text -- e.g.
+"see", "=>", "see also" -- that is used in non-preferred and related terms.
+These are classes for `Span` elements. They are not strictly required, but they may
+help extracting the actual content of terms, free of any auxiliary text.
 
 ## How indices are modelled in different formats
 

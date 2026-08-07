@@ -34,9 +34,9 @@ local INDEX_REF_TEXT_ATTR = "indexed-text"
 ---The class characterizing an index term.
 local INDEX_TERM_CLASS = "index-term"
 ---The class of a span of text delimiting the text "see" or equivalent (e.g. "->").
-local INDEX_SEE_CLASS = "see"
+local INDEX_SEE_FILLER_CLASS = "see"
 ---The class of a span of text delimiting the text "see also" or equivalent.
-local INDEX_SEE_ALSO_CLASS = "see-also"
+local INDEX_SEE_ALSO_FILLER_CLASS = "see-also"
 ---The class of a span of text delimiting the preferred term.
 local INDEX_PREFERRED_CLASS = "preferred"
 ---The class of a span of text delimiting the non-preferred term.
@@ -45,6 +45,8 @@ local INDEX_NON_PREFERRED_CLASS = "non-preferred"
 local INDEX_RELATED_CLASS = "related"
 ---The class of a non-preferred index term, that usually references to the preferred one.
 local INDEX_SEE_TERM_CLASS = "see-term"
+---The class of a related index term, that usually references to the preferred one.
+local INDEX_SEE_ALSO_TERM_CLASS = "see-also-term"
 ---The attribute used as sort-key in the index.
 local INDEX_SORT_KEY_ATTR = "sort-key"
 
@@ -86,8 +88,9 @@ local stringify = pandoc.utils.stringify
 ---@field markdown? string  The content of the term rendered as markdown.
 ---@field subs      IndexTerm[] The eventual sub-terms.
 ---@field see?      boolean|string[] For non-preferred terms: `true` for free text,
----                          or these id(s) of the preferred term(s).
----@field seeAlso?  string[] The ids of the related terms.
+---                          or the id(s) of the preferred term(s).
+---@field seeAlso?  boolean|string[] For non-preferred terms: `true` for free text,
+---                          or the id(s) of the related term(s).
 
 ---@class IndexRef A reference to an `IndexTerm` in the text.
 ---@field indexName string The name of the index.
@@ -133,9 +136,9 @@ local get_term_references = {
         local seeAlso = termToTermRefs.seeAlso or {}
         table_insert(seeAlso, span.attributes.idref or stringify(span.content))
         termToTermRefs.seeAlso = seeAlso
-      elseif classes:includes(INDEX_SEE_CLASS) then
+      elseif classes:includes(INDEX_SEE_FILLER_CLASS) then
         termToTermRefs.seeText = stringify(span.content)
-      elseif classes:includes(INDEX_SEE_ALSO_CLASS) then
+      elseif classes:includes(INDEX_SEE_ALSO_FILLER_CLASS) then
         termToTermRefs.seeAlsoText = stringify(span.content)
       end
     end
@@ -806,9 +809,11 @@ return {
   INDEX_REF_TEXT_ATTR = INDEX_REF_TEXT_ATTR,
   INDEX_TERM_CLASS = INDEX_TERM_CLASS,
   INDEX_SEE_TERM_CLASS = INDEX_SEE_TERM_CLASS,
-  INDEX_NON_PREFERRED_CLASS = INDEX_NON_PREFERRED_CLASS,
-  INDEX_SEE_CLASS = INDEX_SEE_CLASS,
-  INDEX_SEE_ALSO_CLASS = INDEX_SEE_ALSO_CLASS,
   INDEX_PREFERRED_CLASS = INDEX_PREFERRED_CLASS,
+  INDEX_NON_PREFERRED_CLASS = INDEX_NON_PREFERRED_CLASS,
+  INDEX_RELATED_CLASS = INDEX_RELATED_CLASS,
+  INDEX_SEE_FILLER_CLASS = INDEX_SEE_FILLER_CLASS,
+  INDEX_SEE_ALSO_TERM_CLASS = INDEX_SEE_ALSO_TERM_CLASS,
+  INDEX_SEE_ALSO_FILLER_CLASS = INDEX_SEE_ALSO_FILLER_CLASS,
   INDEX_SORT_KEY_ATTR = INDEX_SORT_KEY_ATTR,
 }
