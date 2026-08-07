@@ -46,11 +46,11 @@ local INDEX_CLASS = pandocIndices.INDEX_CLASS
 local INDEX_TERM_CLASS = pandocIndices.INDEX_TERM_CLASS
 local INDEX_REF_CLASS_ATTR = pandocIndices.INDEX_REF_CLASS_ATTR
 local INDEX_REF_CLASS_DEFAULT = pandocIndices.INDEX_REF_CLASS_DEFAULT
+local getVariable = pandocIndices.getVariable
 
 -- read variables from the command line
-local vars = PANDOC_WRITER_OPTIONS.variables or {}
-local index_name = vars.index_name and tostring(vars.index_name) or INDEX_NAME_DEFAULT
-local ref_class = vars.ref_class and tostring(vars.ref_class) or INDEX_REF_CLASS_DEFAULT
+local index_name = getVariable("index_name", nil, INDEX_NAME_DEFAULT)
+local ref_class = getVariable("ref_class", nil, INDEX_REF_CLASS_DEFAULT)
 
 ---@type Filter
 local paragraphs_to_index_terms_filter = {

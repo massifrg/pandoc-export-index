@@ -62,13 +62,14 @@ local List = pandoc.List
 local Pandoc = pandoc.Pandoc
 local Para = pandoc.Para
 local Str = pandoc.Str
+local log_info = pandoc.log.info
+local log_warn = pandoc.log.warn
+local render = pandoc.layout.render
 local pandoc_write = pandoc.write
+local stringify = pandoc.utils.stringify
 local utf8len = pandoc.text.len
 local utf8lower = pandoc.text.lower
 local utf8sub = pandoc.text.sub
-local log_info = pandoc.log.info
-local log_warn = pandoc.log.warn
-local stringify = pandoc.utils.stringify
 
 ---@alias IndexName string The name of an index.
 
@@ -119,6 +120,27 @@ local current_index_name
 local terms = {}
 ---@type TermToTermRef A variable used by the `get_term_references filter`.
 local termToTermRefs = { see = {}, seeAlso = {} }
+
+-- GENERIC SHARED UTILITIES
+
+---Retrieve a variable from WriterOptions.
+---@param key string The variable name.
+---@param opts? WriterOptions
+---@param defaultValue? any The optional default value in case the variable is not set.
+---@return string|nil
+local function getVariable(key, opts, defaultValue)
+  local wopts = opts or PANDOC_WRITER_OPTIONS
+  local variables = wopts and wopts.variables
+  if variables then
+    local v = variables[key]
+    if v then
+      return render(v)
+    end
+  end
+  return defaultValue
+end
+
+-- END OF GENERIC SHARED UTILITIES
 
 ---@type Filter
 local get_term_references = {
@@ -780,6 +802,7 @@ local function indexOfIndices(doc_indices, name)
 end
 
 return {
+  getVariable = getVariable,
   collectIndices = collectIndices,
   computeSortKey = computeSortKey,
   expungeIndexTerms = expungeIndexTerms,

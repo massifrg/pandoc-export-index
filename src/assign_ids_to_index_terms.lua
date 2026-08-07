@@ -36,15 +36,12 @@ end
 
 addPathsToLuaPath({ pandoc.path.directory(PANDOC_SCRIPT_FILE) })
 local pandocIndices = require('pandoc-indices')
+local getVariable = pandocIndices.getVariable
 
-local variables = PANDOC_WRITER_OPTIONS.variables or {}
----@type boolean
-local idsReset = variables.ids_reset and variables.ids_reset ~= "false" and true or false
-local idsPrefixesVariable = variables.ids_prefixes or ''
+local ids_reset = getVariable("ids_reset", nil)
+local idsReset = ids_reset ~= nil and ids_reset ~= "false"
 ---@type table<string,string>
-local idsPrefixes = idsPrefixesVariable
-    and pandoc.json.decode(tostring(idsPrefixesVariable), false)
-    or {}
+local idsPrefixes = pandoc.json.decode(getVariable("ids_prefixes", nil, '{}'), false)
 
 local isIndexDiv = pandocIndices.isIndexDiv
 local isIndexTermDiv = pandocIndices.isIndexTermDiv

@@ -71,6 +71,7 @@ local INDEX_REF_CLASS_ATTR = pandocIndices.INDEX_REF_CLASS_ATTR
 local INDEX_REF_CLASS_DEFAULT = pandocIndices.INDEX_REF_CLASS_DEFAULT
 local INDEX_REF_WHERE_ATTR = pandocIndices.INDEX_REF_WHERE_ATTR
 local INDEX_REF_WHERE_DEFAULT = pandocIndices.INDEX_REF_WHERE_DEFAULT
+local getVariable = pandocIndices.getVariable
 
 local Attr = pandoc.Attr
 local Div = pandoc.Div
@@ -83,11 +84,8 @@ local pandoc_read = pandoc.read
 local log_info = pandoc.log.info
 local log_warn = pandoc.log.warn
 
-local variables = PANDOC_WRITER_OPTIONS.variables or {}
-local indices_var = variables[INDICES_VAR_NAME]
-indices_var = indices_var and json_decode(tostring(indices_var))
-local indices_file = variables[INDICES_FILE_VAR_NAME]
-indices_file = indices_file and tostring(indices_file)
+local indices_var = json_decode(getVariable(INDICES_VAR_NAME, nil, ""))
+local indices_file = getVariable(INDICES_FILE_VAR_NAME)
 
 ---@type Index[]
 local indices

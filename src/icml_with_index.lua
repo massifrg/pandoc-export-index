@@ -39,7 +39,6 @@ local MAX_ICML_TERM_TEXT_LENGTH = nil
 local pandoc = pandoc
 local List = pandoc.List
 local RawInline = pandoc.RawInline
-local render = pandoc.layout.render
 local string_find = string.find
 local string_sub = string.sub
 local table_insert = table.insert
@@ -76,6 +75,7 @@ local just_one_index = true
 ---@type Index
 local current_index = nil
 
+local getVariable = pandocIndices.getVariable
 local _isIndexRef = pandocIndices.isIndexRef
 local textForXml = pandocIndices.textForXml
 local indexAsIndexTerm = pandocIndices.indexAsIndexTerm
@@ -402,23 +402,12 @@ local function fillIcmlFields()
   end
 end
 
----Retrieve a variable from WriterOptions.
----@param opts WriterOptions
----@param key string The variable name.
----@return string|nil
-local function getStringVariable(opts, key)
-  local v = opts.variables[key]
-  if v then
-    return render(v)
-  end
-end
-
 ---Pandoc writer to produce an ICML document with an index.
 ---@param doc Pandoc
 ---@param opts WriterOptions
 function Writer(doc, opts)
-  seeText = getStringVariable(opts, "see-text")
-  seeAlsoText = getStringVariable(opts, "see-also-text")
+  seeText = getVariable("see-text", opts)
+  seeAlsoText = getVariable("see-also-text", opts)
   local collected = pandocIndices.collectIndices(doc)
   indices = collected.indices
   terms = collected.terms

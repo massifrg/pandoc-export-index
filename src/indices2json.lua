@@ -30,13 +30,11 @@ end
 ---@diagnostic disable-next-line: undefined-global
 addPathsToLuaPath({ pandoc.path.directory(PANDOC_SCRIPT_FILE) })
 local pandocIndices = require('pandoc-indices')
+local getVariable = pandocIndices.getVariable
 
 function Writer(doc, opts)
-  local variables = opts.variables
-  local alt_id_attr_var = variables and variables[ALT_ID_VARIABLE_NAME]
-  local alt_id_attr
-  if alt_id_attr_var then
-    alt_id_attr = alt_id_attr_var:render()
+  local alt_id_attr = getVariable(ALT_ID_VARIABLE_NAME, opts)
+  if alt_id_attr then
     pandoc.log.warn('Using attribute "' .. alt_id_attr .. '" to read the identifier of index terms')
   end
   local data = pandocIndices.collectIndices(doc, alt_id_attr)

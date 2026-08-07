@@ -57,6 +57,7 @@ local INDEX_REF_TEXT_ATTR = pandocIndices.INDEX_REF_TEXT_ATTR
 local IDREF_ATTR = "idref"
 local INDEX_TERM_CLASS = pandocIndices.INDEX_TERM_CLASS
 local INDEX_SORT_KEY_ATTR = pandocIndices.INDEX_SORT_KEY_ATTR
+local getVariable = pandocIndices.getVariable
 
 ---@class IndexReference
 ---@field text string
@@ -65,11 +66,8 @@ local INDEX_SORT_KEY_ATTR = pandocIndices.INDEX_SORT_KEY_ATTR
 ---@type table<string,IndexReference[]>
 local indices = {}
 
-local variables = PANDOC_WRITER_OPTIONS.variables or {}
-local indexRefClassesVar = variables.index_ref_classes
 ---@type table<string,string>
-local indexRefClasses = indexRefClassesVar
-    and pandoc.json.decode(tostring(indexRefClassesVar), false)
+local indexRefClasses = pandoc.json.decode(getVariable("index_ref_classes", nil, ""), false)
     or { [INDEX_REF_CLASS_DEFAULT] = INDEX_NAME_DEFAULT }
 
 local function referencedIndex(span)
